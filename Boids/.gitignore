@@ -1,0 +1,8 @@
+/Saved
+/Intermediate
+/Binaries
+/Config
+/Content/__*
+.vs
+.vsconfig
+Boids.sln
