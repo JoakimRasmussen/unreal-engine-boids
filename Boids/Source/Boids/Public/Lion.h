@@ -4,23 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "Animal.h"
-#include "Zebra.generated.h"
+#include "Lion.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BOIDS_API AZebra : public AAnimal
+class BOIDS_API ALion : public AAnimal
 {
 	GENERATED_BODY()
 
 public:
-	
-	AZebra();
+
+	ALion();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 private:
 
-	
 };

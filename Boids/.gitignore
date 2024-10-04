@@ -3,6 +3,9 @@
 /Binaries
 /Config
 /Content/__*
+/Content/StarterContent
+/Content/AfricanAnimalsPack
+
 .vs
 .vsconfig
 Boids.sln
