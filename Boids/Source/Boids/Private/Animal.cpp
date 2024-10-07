@@ -56,7 +56,7 @@ void AAnimal::StartEating()
 	UE_LOG(LogTemp, Warning, TEXT("Eating"));
 }
 
-
+// Note: Turn off Flocking when used
 void AAnimal::SetRandomTarget()
 {
 	UE_LOG(LogTemp, Warning, TEXT("SetNewTarget"));

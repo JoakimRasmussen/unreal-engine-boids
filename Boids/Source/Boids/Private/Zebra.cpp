@@ -9,22 +9,14 @@ AZebra::AZebra()
 
 void AZebra::BeginPlay()
 {
-
 	Super::BeginPlay();
-	
-	GetWorldTimerManager().SetTimer(TargetChangeTimer, this, &AZebra::SetRandomTarget, 10.0f, true);
-	GetWorldTimerManager().SetTimer(EatTimer, this, &AZebra::StartEating, 5.0f, true);
-	// Set the initial target
-	MoveToTarget(PatrolTarget);	
+	GetWorld()->GetTimerManager().SetTimer(TargetChangeTimer, this, &AZebra::SetRandomTarget, 6.0f, true);
 }
 
 void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector temp = GetCharacterMovement()->Velocity;
-	// Log the velocity of the zebra
-	UE_LOG(LogTemp, Warning, TEXT("Zebra Velocity: %f"), temp.X);
-	UE_LOG(LogTemp, Warning, TEXT("Zebra Velocity: %f"), temp.Y);
-	UE_LOG(LogTemp, Warning, TEXT("Zebra Velocity: %f"), temp.Z);
+	this->MoveInDirection(FVector(1.0f, 0.0f, 0.0f), 0.5f );
+	UE_LOG(LogTemp, Warning, TEXT("Zebra Velocity: %s"), *GetVelocity().ToString());
 }

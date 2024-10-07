@@ -65,4 +65,5 @@ public:
 	FORCEINLINE FVector GetAnimalPosition() const { return GetActorLocation(); }
 	FORCEINLINE FVector GetAnimalVelocity() const { return GetCharacterMovement()->Velocity; }
 
+	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 };
