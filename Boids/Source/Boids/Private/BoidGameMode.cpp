@@ -18,8 +18,14 @@ void ABoidGameMode::GetAllAnimals()
 {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAnimal::StaticClass(), Zebras);
 	
-	for (AActor* Zebra : Zebras)
+	for (AActor* ZebraActor : Zebras)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Zebra: %s"), *Zebra->GetName());
+		AZebra* Zebra = Cast<AZebra>(ZebraActor);
+		if (Zebra)
+		{
+			FVector ZebraVelocity = Zebra->GetVelocity();
+			UE_LOG(LogTemp, Warning, TEXT("Zebra Velocity: %s"), *ZebraVelocity.ToString());
+		}
+		
 	}
 }

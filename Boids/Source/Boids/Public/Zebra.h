@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animal.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Zebra.generated.h"
 
 /**

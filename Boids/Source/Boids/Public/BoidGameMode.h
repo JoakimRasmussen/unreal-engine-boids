@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Animal.h"
+#include "Zebra.h"
 #include "BoidGameMode.generated.h"
 
 /**

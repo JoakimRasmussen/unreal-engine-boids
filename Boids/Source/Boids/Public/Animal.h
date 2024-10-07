@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "AnimalStates.h"
 #include "Animal.generated.h"
 
@@ -61,5 +62,7 @@ public:
 	UFUNCTION()
 	FORCEINLINE EAnimalState GetAnimalState() const { return AnimalState; }
 	FORCEINLINE AAIController* GetAnimalController() const { return AnimalController; }
+	FORCEINLINE FVector GetAnimalPosition() const { return GetActorLocation(); }
+	FORCEINLINE FVector GetAnimalVelocity() const { return GetCharacterMovement()->Velocity; }
 
 };

@@ -82,6 +82,7 @@ void AAnimal::SetRandomTarget()
 		FNavPathSharedPtr NavPath;
 		AnimalController->MoveTo(MoveRequest, &NavPath);
 
+
 		UE_LOG(LogTemp, Warning, TEXT("New target set"));
 	}
 	else
