@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Animal.h"
 #include "Zebra.h"
+#include "Lion.h"
 #include "BoidGameMode.generated.h"
 
 /**
@@ -21,10 +22,23 @@ public:
 	ABoidGameMode();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	void GetAllAnimals();
-	
-	UPROPERTY(EditAnywhere, Category = "Zebras")
-	TArray<AActor*> Zebras;
-	
+	void ZebraFlocking();
+	void LionFlocking();
+
+private:
+	TArray<AActor*> LionActors;
+	TArray<ALion*> Lions;
+
+	TArray<AActor*> ZebraActors;
+	TArray<AZebra*> Zebras;
+	FVector ZebraMeanLocation;
+	int AliveZebraCount;
+
+	TArray<AZebra*> GetAllZebras();
+	TArray<ALion*> GetAllLions();
+
+	void UpdateZebraMeanLocation();
 };

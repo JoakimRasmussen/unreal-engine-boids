@@ -91,3 +91,21 @@ void AAnimal::SetRandomTarget()
 	}
 }
 
+void AAnimal::MoveTowardsLocation(FVector location)
+{
+	// Calculate direction vector (and normalize it to make it a unit vector)
+	FVector Direction = (location - this->GetActorLocation()).GetSafeNormal();
+
+	// Get current velocity and calculate speed magnitude (how fast the actor is moving)
+	FVector ActorSpeed = this->GetVelocity();
+	float CurrentSpeed = ActorSpeed.Size();
+
+	// Calculate the relative speed factor (0 to 1) based on current speed and max speed
+	float MaxSpeed = this->GetCharacterMovement()->MaxWalkSpeed;
+	float RelativeSpeed = CurrentSpeed / MaxSpeed;
+
+	// Move the actor in the given direction, using the calculated relative speed factor
+	this->MoveInDirection(Direction, RelativeSpeed);
+}
+
+

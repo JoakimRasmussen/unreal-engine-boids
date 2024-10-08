@@ -19,7 +19,15 @@ public:
 	ALion();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	void BeginHunt();
+
+	FVector LastKnownLocation;
+	bool hasReachedLocation();
+	bool isHunting;
+
+	FVector CurrentWanderDirection;
 
 private:
 
+	
 };
