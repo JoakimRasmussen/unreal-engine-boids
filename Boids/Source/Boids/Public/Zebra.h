@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Zebra.generated.h"
 
+class UCharacterMovementComponent;
 /**
  * 
  */
@@ -24,7 +25,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zebra")
 	bool isDead;
 
+	void SetVelocity(FVector Velocity);
+
+	UCharacterMovementComponent* CharacterMovement;
+
 private:
 
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float CohesionWeight = 0.001f;
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float AvoidanceWeight = 0.001f;
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float AlignmentWeight = 0.001f;
+
+public:
+	
+	FORCEINLINE float GetCohesionWeight() const { return CohesionWeight; }
+	FORCEINLINE float GetAvoidanceWeight() const { return AvoidanceWeight; }
+	FORCEINLINE float GetAlignmentWeight() const { return AlignmentWeight; }
 	
 };

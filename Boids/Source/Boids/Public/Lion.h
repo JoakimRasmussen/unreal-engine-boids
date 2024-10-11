@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animal.h"
+#include "Components/SphereComponent.h"
 #include "Lion.generated.h"
 
 /**
@@ -22,10 +23,13 @@ public:
 	void BeginHunt();
 
 	FVector LastKnownLocation;
-	bool hasReachedLocation();
+	bool HasReachedLocation();
 	bool isHunting;
 
 	FVector CurrentWanderDirection;
+
+	UPROPERTY(EditAnywhere, Category = "Collision Detection")
+	USphereComponent* AttackSphere;
 
 private:
 

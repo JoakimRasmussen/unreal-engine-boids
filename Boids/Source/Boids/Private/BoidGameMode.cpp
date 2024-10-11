@@ -44,35 +44,43 @@ TArray<AZebra*> ABoidGameMode::GetAllZebras()
 	return ZebraCollection;
 }
 
-TArray<ALion*> ABoidGameMode::GetAllLions()
-{
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ALion::StaticClass(), LionActors);
-
-	TArray<ALion*> LionCollection;
-	for (AActor* LionActor : LionActors)
-	{
-		ALion* Lion = Cast<ALion>(LionActor);
-		if (Lion)
-		{
-			LionCollection.Add(Lion);
-		}
-	}
-	return LionCollection;
-}
-
 void ABoidGameMode::ZebraFlocking()
 {
 	UpdateZebraMeanLocation();
 
+	FVector SpeedDifference;
+	FVector AveragePosition;
+	FVector AvoidanceVector;
+	
 	for (AZebra* Zebra : Zebras)
 	{
-		if (Zebra->isDead) continue;
+		SpeedDifference = FVector(0, 0, 0);
+		AveragePosition = FVector(0, 0, 0);
+		AvoidanceVector = FVector(0, 0, 0);
 
-		FVector ZebraVelocity = Zebra->GetVelocity();
-		FVector ZebraLocation = Zebra->GetActorLocation();
-		FVector ZebraDirection = ZebraMeanLocation - ZebraLocation;
-		ZebraDirection.Normalize();
-		Zebra->MoveInDirection(ZebraDirection, 0.5f);
+		for (AZebra* OtherZebra : Zebras)
+		{
+			if (Zebra != OtherZebra)
+			{
+				SpeedDifference += OtherZebra->GetVelocity() - Zebra->GetVelocity();
+				AveragePosition += OtherZebra->GetActorLocation();
+				if (FVector::Dist(Zebra->GetActorLocation(), OtherZebra->GetActorLocation()) < 1000.0f)
+				{
+					AvoidanceVector += Zebra->GetActorLocation() - OtherZebra->GetActorLocation();
+				}
+			}
+		}
+
+		SpeedDifference /= Zebras.Num() - 1;
+		AveragePosition /= Zebras.Num() - 1;
+		AvoidanceVector /= Zebras.Num() - 1;
+
+		Zebra->SetVelocity(Zebra->GetVelocity() 
+			+ (SpeedDifference * Zebra->GetAlignmentWeight()) 
+			+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight() 
+			+ AvoidanceVector * Zebra->GetAvoidanceWeight());
+		// Set Zebras rotation in the world to face the direction of movement
+		Zebra->SetActorRotation(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Zebra->GetVelocity().Y, Zebra->GetVelocity().X)), 0));
 	}
 }
 
@@ -109,7 +117,7 @@ void ABoidGameMode::LionFlocking()
 	{
 		if (Lion->isHunting)
 		{
-			if (Lion->hasReachedLocation())
+			if (Lion->HasReachedLocation())
 			{
 				Lion->LastKnownLocation = ZebraMeanLocation;
 			}
@@ -149,5 +157,19 @@ void ABoidGameMode::LionFlocking()
 	}
 }
 
+TArray<ALion*> ABoidGameMode::GetAllLions()
+{
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ALion::StaticClass(), LionActors);
 
+	TArray<ALion*> LionCollection;
+	for (AActor* LionActor : LionActors)
+	{
+		ALion* Lion = Cast<ALion>(LionActor);
+		if (Lion)
+		{
+			LionCollection.Add(Lion);
+		}
+	}
+	return LionCollection;
+}
 

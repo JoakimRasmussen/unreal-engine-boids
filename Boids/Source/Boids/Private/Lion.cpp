@@ -1,10 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
+
 #include "Lion.h"
 
 ALion::ALion()
 {
+	AttackSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackSphere"));
+	AttackSphere->SetupAttachment(RootComponent);
 }
 
 void ALion::BeginPlay()
@@ -24,7 +27,7 @@ void ALion::BeginHunt()
 	UE_LOG(LogTemp, Warning, TEXT("Lion has started hunting!"));
 }
 
-bool ALion::hasReachedLocation()
+bool ALion::HasReachedLocation()
 {
 	return FVector::Dist(this->GetActorLocation(), this->LastKnownLocation) < 100.0f;
 }

@@ -16,9 +16,11 @@ void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->isDead)
-	{
-		return;
-	}
-	this->MoveInDirection(FVector(1.0f, 0.0f, 0.0f), 0.5f );
+	this->MoveInDirection(FVector(1.0f, 0.0f, 0.0f), 0.5f);
+}
+
+void AZebra::SetVelocity(FVector Velocity)
+{
+	CharacterMovement = this->GetCharacterMovement();
+	CharacterMovement->Velocity = Velocity;
 }
