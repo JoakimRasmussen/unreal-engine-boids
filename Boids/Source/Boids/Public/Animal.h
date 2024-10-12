@@ -30,6 +30,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable)
+	void SetDeadState();
 	// Set the state of the animal, used in animation blueprint to controll state machine
 	UPROPERTY(EditAnywhere, BlueprintReadonly, Category = "AI Navigation")
 	EAnimalState AnimalState;

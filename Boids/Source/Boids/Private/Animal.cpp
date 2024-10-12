@@ -39,6 +39,11 @@ void AAnimal::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void AAnimal::SetDeadState()
+{
+	AnimalState = EAnimalState::EAS_Dead;
+}
+
 void AAnimal::MoveToTarget(AActor* Target)
 {
 	if (AnimalController == nullptr || Target == nullptr) return;

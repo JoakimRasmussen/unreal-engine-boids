@@ -15,8 +15,11 @@ void AZebra::BeginPlay()
 void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	this->MoveInDirection(FVector(1.0f, 0.0f, 0.0f), 0.5f);
+	if (GetAnimalState() != EAnimalState::EAS_Dead)
+	{
+		MoveInDirection(FVector(1, 0, 0), 0.5f);
+	}
+	
 }
 
 void AZebra::SetVelocity(FVector Velocity)
