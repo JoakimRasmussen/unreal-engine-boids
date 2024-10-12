@@ -25,8 +25,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zebra")
 	bool isDead;
 
-	void SetVelocity(FVector Velocity);
 	UCharacterMovementComponent* CharacterMovement;
+	void SetVelocity(FVector Velocity);
+	void SetFleeDirection(FVector CurrentPosition, FVector PredatorPosition);
+	void SetMoveDirection(FVector MoveDirection);
+	FVector MoveDirection = FVector(1, 0, 0);
+	FVector FleeDirection = FVector(0, 0, 0);
 
 private:
 
@@ -40,6 +44,8 @@ private:
 	float AvoidanceRadius = 10.0f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float PredatorAvoidanceWeight = 2.0f;
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float PredatorFleeDistance = 100.0f;
 
 public:
 	
@@ -48,5 +54,9 @@ public:
 	FORCEINLINE float GetAlignmentWeight() const { return AlignmentWeight; }
 	FORCEINLINE float GetAvoidanceRadius() const { return AvoidanceRadius; }
 	FORCEINLINE float GetPredatorAvoidanceWeight() const { return PredatorAvoidanceWeight; }
+	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
+	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
+
+	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
 	
 };

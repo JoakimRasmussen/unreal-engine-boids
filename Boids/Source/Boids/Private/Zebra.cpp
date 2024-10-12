@@ -15,9 +15,10 @@ void AZebra::BeginPlay()
 void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (GetAnimalState() != EAnimalState::EAS_Dead)
+	
+	if (GetAnimalState() == EAnimalState::EAS_Flocking)
 	{
-		MoveInDirection(FVector(1, 0, 0), 0.5f);
+		MoveInDirection(MoveDirection, 0.5f);
 	}
 	
 }
@@ -26,4 +27,15 @@ void AZebra::SetVelocity(FVector Velocity)
 {
 	CharacterMovement = this->GetCharacterMovement();
 	CharacterMovement->Velocity = Velocity;
+}
+
+void AZebra::SetFleeDirection(FVector CurrentPosition, FVector PredatorPosition)
+{
+	// Calculate the direction to flee from the predator
+	FleeDirection = CurrentPosition - PredatorPosition;
+}
+
+void AZebra::SetMoveDirection(FVector NewDirection)
+{
+	MoveDirection = NewDirection;
 }

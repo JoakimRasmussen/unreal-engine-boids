@@ -52,10 +52,19 @@ void ABoidGameMode::ZebraFlocking()
 	FVector AveragePosition;
 	FVector AvoidanceVector;
 
-	// Regular flocking
+
 	for (AZebra* Zebra : Zebras)
 	{
+		if (Zebra->IsDead())
+		{
+			continue;
+		}
+		if (Zebra->GetAnimalState() == EAnimalState::EAS_Fleeing)
+		{
+			Zebra->MoveInDirection(Zebra->GetFleeDirection(), 1.0f);
+		}
 
+		// Regular flocking
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Flocking)
 		{
 			SpeedDifference = FVector(0, 0, 0);
@@ -67,13 +76,22 @@ void ABoidGameMode::ZebraFlocking()
 			{
 				if (FVector::Dist(Zebra->GetActorLocation(), Lion->GetActorLocation()) < Zebra->GetAvoidanceRadius())
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Lion is close!"));
+					if (FVector::Dist(Zebra->GetActorLocation(), Lion->GetActorLocation()) < 500.0f)
+					{
+						Zebra->AnimalState = EAnimalState::EAS_Fleeing;
+						Zebra->SetFleeDirection(Zebra->GetActorLocation(), Lion->GetActorLocation());
+						Zebra->SetMoveDirection(Zebra->GetFleeDirection());
+					}
 					AvoidanceVector += (Zebra->GetActorLocation() - Lion->GetActorLocation()) * Zebra->GetPredatorAvoidanceWeight();
 				}
 			}
 
 			for (AZebra* OtherZebra : Zebras)
 			{
+				if (OtherZebra->IsDead() || OtherZebra->AnimalState == EAnimalState::EAS_Fleeing)
+				{
+					continue;
+				}
 				if (Zebra != OtherZebra)
 				{
 					SpeedDifference += OtherZebra->GetVelocity() - Zebra->GetVelocity();
