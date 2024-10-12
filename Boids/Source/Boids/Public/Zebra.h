@@ -47,6 +47,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float PredatorFleeDistance = 100.0f;
 
+
 public:
 	
 	FORCEINLINE float GetCohesionWeight() const { return CohesionWeight; }

@@ -38,6 +38,8 @@ public:
 
 private:
 	
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float Stamina = 100.0f;
 
 protected:
 	
@@ -66,6 +68,8 @@ public:
 	FORCEINLINE AAIController* GetAnimalController() const { return AnimalController; }
 	FORCEINLINE FVector GetAnimalPosition() const { return GetActorLocation(); }
 	FORCEINLINE FVector GetAnimalVelocity() const { return GetCharacterMovement()->Velocity; }
+	FORCEINLINE float GetStamina() const { return Stamina; }
+	FORCEINLINE void DecreaseStamina() { Stamina -= 0.1f;  }
 
 	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 	void MoveTowardsLocation(FVector location);

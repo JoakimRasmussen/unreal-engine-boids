@@ -16,9 +16,15 @@ void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	if (GetStamina() < 0.0f)
+	{
+		AnimalState = EAnimalState::EAS_Resting;
+		MoveInDirection(FVector(0.0f, 0.0f, 0.0f), 0.0f);
+	}
+	
 	if (GetAnimalState() == EAnimalState::EAS_Flocking)
 	{
-		MoveInDirection(MoveDirection, 0.5f);
+		MoveInDirection(MoveDirection, 1.0f);
 	}
 	
 }

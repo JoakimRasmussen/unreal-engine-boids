@@ -62,6 +62,7 @@ void ABoidGameMode::ZebraFlocking()
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Fleeing)
 		{
 			Zebra->MoveInDirection(Zebra->GetFleeDirection(), 1.0f);
+			Zebra->DecreaseStamina();
 		}
 
 		// Regular flocking
