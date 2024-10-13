@@ -31,6 +31,9 @@ public:
 	void SetMoveDirection(FVector MoveDirection);
 	FVector MoveDirection = FVector(1, 0, 0);
 	FVector FleeDirection = FVector(0, 0, 0);
+	void AvoidPredator(AActor* Predator, FVector& AvoidanceVector);
+	void FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, FVector& AveragePosition, FVector& AvoidanceVector);
+	FVector CalculateZebraDirection(FVector SpeedDifference, FVector AveragePosition, FVector AvoidanceVector) const;
 
 private:
 
@@ -50,6 +53,8 @@ private:
 	float FlockingRadius = 1000.0f;
 
 
+
+
 public:
 	
 	FORCEINLINE float GetCohesionWeight() const { return CohesionWeight; }
@@ -59,8 +64,8 @@ public:
 	FORCEINLINE float GetPredatorAvoidanceWeight() const { return PredatorAvoidanceWeight; }
 	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
 	FORCEINLINE float GetFlockingRadius() const { return FlockingRadius; }
-	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
 	FORCEINLINE float DistanceToActor(AActor* Actor) const { return FVector::Dist(GetActorLocation(), Actor->GetActorLocation()); }
+	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
 
 	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
 	FORCEINLINE bool IsFleeing() const { return GetAnimalState() == EAnimalState::EAS_Fleeing; }

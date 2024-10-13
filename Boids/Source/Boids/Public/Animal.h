@@ -38,8 +38,11 @@ public:
 
 private:
 	
-	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	UPROPERTY(EditAnywhere, Category = "Attributes")
 	float Stamina = 100.0f;
+
+
+	
 
 protected:
 	
@@ -58,6 +61,10 @@ protected:
 	
 	UPROPERTY()
 	class AAIController* AnimalController;
+	
+	UPROPERTY(EditAnywhere, Category = "Debug Mode")
+	bool bDebugMode = false;
+	
 	FTimerHandle TargetChangeTimer;
 	FTimerHandle EatTimer;
 
@@ -70,6 +77,7 @@ public:
 	FORCEINLINE FVector GetAnimalVelocity() const { return GetCharacterMovement()->Velocity; }
 	FORCEINLINE float GetStamina() const { return Stamina; }
 	FORCEINLINE void DecreaseStamina() { Stamina -= 0.1f;  }
+	FORCEINLINE void IncreaseStamina() { Stamina += 0.1f; }
 
 	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 	void MoveTowardsLocation(FVector location);

@@ -54,17 +54,7 @@ void ABoidGameMode::ZebraFlocking()
 
 
 	for (AZebra* Zebra : Zebras)
-	{
-
-		if (bDebugMode)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Debug Mode"));
-			if (GetWorld())
-			{
-				DrawDebugSphere(GetWorld(), Zebra->GetActorLocation(), Zebra->GetFlockingRadius(), 12, FColor::Red, false, 0.1f);
-			}
-		}
-		
+	{		
 		if (Zebra->IsDead())
 		{
 			continue;
@@ -85,52 +75,28 @@ void ABoidGameMode::ZebraFlocking()
 			// 6-th sense to avoid Lions. (Scent perhaps)
 			for (ALion* Lion : Lions)
 			{
-				if (FVector::Dist(Zebra->GetActorLocation(), Lion->GetActorLocation()) < Zebra->GetAvoidanceRadius())
-				{
-					if (FVector::Dist(Zebra->GetActorLocation(), Lion->GetActorLocation()) < 500.0f)
-					{
-						Zebra->AnimalState = EAnimalState::EAS_Fleeing;
-						Zebra->SetFleeDirection(Zebra->GetActorLocation(), Lion->GetActorLocation());
-						Zebra->SetMoveDirection(Zebra->GetFleeDirection());
-					}
-					AvoidanceVector += (Zebra->GetActorLocation() - Lion->GetActorLocation()) * Zebra->GetPredatorAvoidanceWeight();
-				}
+				Zebra->AvoidPredator(Lion, AvoidanceVector);
 			}
 
 			for (AZebra* OtherZebra : Zebras)
 			{
-				if (OtherZebra->IsDead() || OtherZebra->IsFleeing())
-				{
-					continue;
-				}
-				if (Zebra != OtherZebra)
-				{
-					SpeedDifference += OtherZebra->GetVelocity() - Zebra->GetVelocity();
-					AveragePosition += OtherZebra->GetActorLocation();
-					if (FVector::Dist(Zebra->GetActorLocation(), OtherZebra->GetActorLocation()) < 1000.0f)
-					{
-						AvoidanceVector += Zebra->GetActorLocation() - OtherZebra->GetActorLocation();
-					}
-				}
+				Zebra->FlockingCalculations(OtherZebra, SpeedDifference, AveragePosition, AvoidanceVector);
 			}
 
 			SpeedDifference /= Zebras.Num() - 1;
 			AveragePosition /= Zebras.Num() - 1;
 			AvoidanceVector /= Zebras.Num() - 1;
 
+			FVector Direction = Zebra->CalculateZebraDirection(SpeedDifference, AveragePosition, AvoidanceVector);
 			// Need to find a smart way to adjust SpeedFactor...
-			Zebra->MoveInDirection(Zebra->GetVelocity()
-				+ (SpeedDifference * Zebra->GetAlignmentWeight())
-				+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight()
-				+ AvoidanceVector * Zebra->GetAvoidanceWeight(), 0.5f);
+			Zebra->MoveInDirection(Direction.GetSafeNormal(), 0.5f);
 
 			//Zebra->SetVelocity(Zebra->GetVelocity() 
 			//	+ (SpeedDifference * Zebra->GetAlignmentWeight()) 
 			//	+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight() 
 			//	+ AvoidanceVector * Zebra->GetAvoidanceWeight());
-			
 			// Set Zebras rotation in the world to face the direction of movement
-			Zebra->SetActorRotation(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Zebra->GetVelocity().Y, Zebra->GetVelocity().X)), 0));
+			//Zebra->SetActorRotation(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Zebra->GetVelocity().Y, Zebra->GetVelocity().X)), 0));
 		}
 	}
 }
