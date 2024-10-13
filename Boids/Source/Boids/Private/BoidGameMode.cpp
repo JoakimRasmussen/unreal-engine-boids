@@ -55,6 +55,16 @@ void ABoidGameMode::ZebraFlocking()
 
 	for (AZebra* Zebra : Zebras)
 	{
+
+		if (bDebugMode)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Debug Mode"));
+			if (GetWorld())
+			{
+				DrawDebugSphere(GetWorld(), Zebra->GetActorLocation(), Zebra->GetFlockingRadius(), 12, FColor::Red, false, 0.1f);
+			}
+		}
+		
 		if (Zebra->IsDead())
 		{
 			continue;
@@ -89,7 +99,7 @@ void ABoidGameMode::ZebraFlocking()
 
 			for (AZebra* OtherZebra : Zebras)
 			{
-				if (OtherZebra->IsDead() || OtherZebra->AnimalState == EAnimalState::EAS_Fleeing)
+				if (OtherZebra->IsDead() || OtherZebra->IsFleeing())
 				{
 					continue;
 				}
@@ -108,10 +118,17 @@ void ABoidGameMode::ZebraFlocking()
 			AveragePosition /= Zebras.Num() - 1;
 			AvoidanceVector /= Zebras.Num() - 1;
 
-			Zebra->SetVelocity(Zebra->GetVelocity() 
-				+ (SpeedDifference * Zebra->GetAlignmentWeight()) 
-				+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight() 
-				+ AvoidanceVector * Zebra->GetAvoidanceWeight());
+			// Need to find a smart way to adjust SpeedFactor...
+			Zebra->MoveInDirection(Zebra->GetVelocity()
+				+ (SpeedDifference * Zebra->GetAlignmentWeight())
+				+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight()
+				+ AvoidanceVector * Zebra->GetAvoidanceWeight(), 0.5f);
+
+			//Zebra->SetVelocity(Zebra->GetVelocity() 
+			//	+ (SpeedDifference * Zebra->GetAlignmentWeight()) 
+			//	+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight() 
+			//	+ AvoidanceVector * Zebra->GetAvoidanceWeight());
+			
 			// Set Zebras rotation in the world to face the direction of movement
 			Zebra->SetActorRotation(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Zebra->GetVelocity().Y, Zebra->GetVelocity().X)), 0));
 		}
@@ -137,11 +154,11 @@ void ABoidGameMode::UpdateZebraMeanLocation()
 	// Print if the mean location has changed
 	if (LastZebraMeanLocation != ZebraMeanLocation)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Zebra Mean Location: %s"), *ZebraMeanLocation.ToString());
+		// UE_LOG(LogTemp, Warning, TEXT("Zebra Mean Location: %s"), *ZebraMeanLocation.ToString());
 	}
 	if (LastCount != AliveZebraCount)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Alive Zebra Count: %d"), AliveZebraCount);
+		// UE_LOG(LogTemp, Warning, TEXT("Alive Zebra Count: %d"), AliveZebraCount);
 	}
 }
 

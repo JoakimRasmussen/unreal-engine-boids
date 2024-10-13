@@ -46,6 +46,8 @@ private:
 	float PredatorAvoidanceWeight = 2.0f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float PredatorFleeDistance = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float FlockingRadius = 1000.0f;
 
 
 public:
@@ -56,8 +58,11 @@ public:
 	FORCEINLINE float GetAvoidanceRadius() const { return AvoidanceRadius; }
 	FORCEINLINE float GetPredatorAvoidanceWeight() const { return PredatorAvoidanceWeight; }
 	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
+	FORCEINLINE float GetFlockingRadius() const { return FlockingRadius; }
 	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
+	FORCEINLINE float DistanceToActor(AActor* Actor) const { return FVector::Dist(GetActorLocation(), Actor->GetActorLocation()); }
 
 	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
+	FORCEINLINE bool IsFleeing() const { return GetAnimalState() == EAnimalState::EAS_Fleeing; }
 	
 };

@@ -19,6 +19,8 @@ class BOIDS_API ABoidGameMode : public AGameModeBase
 
 public:
 
+	UPROPERTY(EditAnywhere, Category = "Debug Mode")
+	bool bDebugMode = false;
 	ABoidGameMode();
 
 	virtual void BeginPlay() override;
@@ -41,4 +43,5 @@ private:
 	TArray<ALion*> GetAllLions();
 
 	void UpdateZebraMeanLocation();
+
 };
