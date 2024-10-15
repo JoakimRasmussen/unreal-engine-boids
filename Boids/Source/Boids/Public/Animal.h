@@ -38,9 +38,6 @@ public:
 
 private:
 	
-	UPROPERTY(EditAnywhere, Category = "Attributes")
-	float Stamina = 100.0f;
-
 
 	
 
@@ -68,6 +65,14 @@ protected:
 	FTimerHandle TargetChangeTimer;
 	FTimerHandle EatTimer;
 
+	UPROPERTY(EditAnywhere, Category = "Attributes")
+	float Stamina = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Attributes")
+	float Hunger = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Attributes")
+	float MaxHunger = 100.0f;
+
+	
 public:
 	
 	UFUNCTION()
@@ -78,6 +83,8 @@ public:
 	FORCEINLINE float GetStamina() const { return Stamina; }
 	FORCEINLINE void DecreaseStamina() { Stamina -= 0.1f;  }
 	FORCEINLINE void IncreaseStamina() { Stamina += 0.1f; }
+	FORCEINLINE void DecreaseHunger() { Hunger -= 0.1f; }
+	FORCEINLINE void IncreaseHunger() { Hunger += 0.1f; }
 
 	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 	void MoveTowardsLocation(FVector location);

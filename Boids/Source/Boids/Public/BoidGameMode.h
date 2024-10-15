@@ -7,6 +7,7 @@
 #include "Animal.h"
 #include "Zebra.h"
 #include "Lion.h"
+#include "FoodSource.h"
 #include "BoidGameMode.generated.h"
 
 /**
@@ -31,16 +32,23 @@ public:
 	void LionFlocking();
 
 private:
+	
 	TArray<AActor*> LionActors;
 	TArray<ALion*> Lions;
 
 	TArray<AActor*> ZebraActors;
 	TArray<AZebra*> Zebras;
+
+	TArray<AActor*> FoodSourceActors;
+	TArray<AFoodSource*> FoodSources;
+	
+	
 	FVector ZebraMeanLocation;
 	int AliveZebraCount;
 
 	TArray<AZebra*> GetAllZebras();
 	TArray<ALion*> GetAllLions();
+	TArray<AFoodSource*> GetAllFoodSources();
 
 	void UpdateZebraMeanLocation();
 

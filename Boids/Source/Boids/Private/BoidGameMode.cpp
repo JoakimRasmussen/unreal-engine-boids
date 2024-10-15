@@ -13,6 +13,7 @@ void ABoidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	GetAllAnimals();
+	FoodSources = GetAllFoodSources();
 }
 
 void ABoidGameMode::Tick(float DeltaTime)
@@ -42,6 +43,25 @@ TArray<AZebra*> ABoidGameMode::GetAllZebras()
 		}
 	}
 	return ZebraCollection;
+}
+
+TArray<AFoodSource*> ABoidGameMode::GetAllFoodSources()
+{
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFoodSource::StaticClass(), FoodSourceActors);
+
+	TArray<AFoodSource*> FoodSourceCollection;
+	for (AActor* FoodSourceActor : FoodSourceActors)
+	{
+		if (FoodSourceActor != nullptr)
+		{
+			AFoodSource* FoodSource = Cast<AFoodSource>(FoodSourceActor);
+			if (FoodSource)
+			{
+				FoodSourceCollection.Add(FoodSource);
+			}
+		}
+	}
+	return FoodSourceCollection;
 }
 
 void ABoidGameMode::ZebraFlocking()
@@ -76,6 +96,14 @@ void ABoidGameMode::ZebraFlocking()
 			for (ALion* Lion : Lions)
 			{
 				Zebra->AvoidPredator(Lion, AvoidanceVector);
+			}
+
+			if (FoodSources.Num() != 0)
+			{
+				for (AFoodSource* FoodSource : FoodSources)
+				{
+					Zebra->FoodSourceAttraction(AveragePosition);
+				}
 			}
 
 			for (AZebra* OtherZebra : Zebras)

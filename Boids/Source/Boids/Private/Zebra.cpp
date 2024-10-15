@@ -70,6 +70,11 @@ void AZebra::AvoidPredator(AActor* Predator, FVector& AvoidanceVector)
 	}
 }
 
+void AZebra::FoodSourceAttraction(FVector& AveragePosition)
+{
+	AveragePosition += GetActorLocation() * GetFoodSourceAttraction();
+}
+
 // Name-placeholder... 
 void AZebra::FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, FVector& AveragePosition, FVector& AvoidanceVector)
 {
@@ -82,7 +87,7 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, 
 	{
 		SpeedDifference += OtherZebra->GetVelocity() - this->GetVelocity();
 		AveragePosition += OtherZebra->GetActorLocation();
-		if (this->DistanceToActor(OtherZebra) < 1000.0f)
+		if (this->DistanceToActor(OtherZebra) < this->GetAvoidanceRadius())
 		{
 			AvoidanceVector += this->GetActorLocation() - OtherZebra->GetActorLocation();
 		}
