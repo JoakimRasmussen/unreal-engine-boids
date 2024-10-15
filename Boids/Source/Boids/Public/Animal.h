@@ -1,12 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AnimalStates.h"
-#include "Animal.generated.h"
+#include "AnimalTypes.h"
+#include "Animal.generated.h"  // This should be the last include
 
 class AAIController;
 
@@ -16,55 +15,50 @@ class BOIDS_API AAnimal : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AAnimal();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// Set the state of the animal, used in animation blueprint to controll state machine
-	UPROPERTY(EditAnywhere, BlueprintReadonly, Category = "AI Navigation")
-	EAnimalState AnimalState;
+	virtual void OnDeath();
 
-private:
-	
+	void MoveTowardsLocation(FVector location);
 
-protected:
-	
-	/*** Everything used by all ANIMALS should be collected here ***/
+	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 
-	// Sets a random position to walk towards
-	void SetRandomTarget();
-	void StartEating();
-	// Set a specific target, could be put to spawn point (home, nest, etc.)
-	void MoveToTarget(AActor* Target);
-	
-	UPROPERTY(EditAnywhere, Category = "AI Navigation")
-	AActor* PatrolTarget;
-	UPROPERTY(EditAnywhere, Category = "AI Navigation")
-	float AcceptanceRadius = 100.0f;
-	
-	UPROPERTY()
-	class AAIController* AnimalController;
-	FTimerHandle TargetChangeTimer;
-	FTimerHandle EatTimer;
-
+	// Public section for getters
 public:
-	
-	UFUNCTION()
 	FORCEINLINE EAnimalState GetAnimalState() const { return AnimalState; }
+	FORCEINLINE EAnimalType GetAnimalType() const { return AnimalType; }
+
 	FORCEINLINE AAIController* GetAnimalController() const { return AnimalController; }
+
 	FORCEINLINE FVector GetAnimalPosition() const { return GetActorLocation(); }
 	FORCEINLINE FVector GetAnimalVelocity() const { return GetCharacterMovement()->Velocity; }
 
-	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
-	void MoveTowardsLocation(FVector location);
+protected:
+	virtual void BeginPlay() override;
+
+	void SetRandomTarget();
+	void StartEating();
+	void MoveToTarget(AActor* Target);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI Navigation")
+	EAnimalState AnimalState;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI Type")
+	EAnimalType AnimalType;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	AActor* PatrolTarget;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	float AcceptanceRadius = 100.0f;
+
+	UPROPERTY()
+	AAIController* AnimalController;
+
+	FTimerHandle TargetChangeTimer;
+	FTimerHandle EatTimer;
 };

@@ -5,6 +5,7 @@
 
 AZebra::AZebra()
 {
+	AnimalType = EAnimalType::EAT_Zebra;
 }
 
 void AZebra::BeginPlay()
@@ -16,7 +17,7 @@ void AZebra::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->isDead)
+	if (this->AnimalState == EAnimalState::EAS_Dead)
 	{
 		return;
 	}

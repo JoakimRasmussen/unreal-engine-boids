@@ -66,7 +66,7 @@ void ABoidGameMode::ZebraFlocking()
 
 	for (AZebra* Zebra : Zebras)
 	{
-		if (Zebra->isDead) continue;
+		if (Zebra->GetAnimalState() == EAnimalState::EAS_Dead) continue;
 
 		FVector ZebraVelocity = Zebra->GetVelocity();
 		FVector ZebraLocation = Zebra->GetActorLocation();
@@ -85,7 +85,7 @@ void ABoidGameMode::UpdateZebraMeanLocation()
 
 	for (AZebra* Zebra : Zebras)
 	{
-		if (Zebra->isDead) continue;
+		if (Zebra->GetAnimalState() == EAnimalState::EAS_Dead) continue;
 
 		ZebraMeanLocation += Zebra->GetActorLocation();
 		AliveZebraCount++;
@@ -107,9 +107,9 @@ void ABoidGameMode::LionFlocking()
 {
 	for (ALion* Lion : Lions)
 	{
-		if (Lion->isHunting)
+		if (Lion->GetAnimalState() == EAnimalState::EAS_Hunting)
 		{
-			if (Lion->hasReachedLocation())
+			if (Lion->HasReachedLocation())
 			{
 				Lion->LastKnownLocation = ZebraMeanLocation;
 			}
@@ -120,7 +120,7 @@ void ABoidGameMode::LionFlocking()
 		else
 		{
 			// Wandering phase: If the lion is not hunting, make it wander in a smooth, drifting manner
-			if (!Lion->isHunting)
+			if (Lion->GetAnimalState() != EAnimalState::EAS_Hunting)
 			{
 				Lion->LastKnownLocation = ZebraMeanLocation;
 				float DistanceToZebras = FVector::Dist(Lion->GetActorLocation(), Lion->LastKnownLocation);

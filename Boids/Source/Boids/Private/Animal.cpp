@@ -14,6 +14,8 @@ AAnimal::AAnimal()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	AnimalType = EAnimalType::EAT_Other;
+	AnimalState = EAnimalState::EAS_Flocking;
 }
 
 // Called when the game starts or when spawned
@@ -21,8 +23,6 @@ void AAnimal::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initial state
-	AnimalState = EAnimalState::EAS_Flocking;
 	// Get the AI controller
 	AnimalController = Cast<AAIController>(GetController());
 }
@@ -31,6 +31,18 @@ void AAnimal::BeginPlay()
 void AAnimal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AAnimal::OnDeath()
+{
+	//Print what animal died
+	UE_LOG(LogTemp, Warning, TEXT("Animal type is Dead: %d"), static_cast<uint8>(AnimalType));
+	AnimalState = EAnimalState::EAS_Dead;
+
+	if (AnimalController)
+	{
+		AnimalController->StopMovement();
+	}
 }
 
 // Called to bind functionality to input

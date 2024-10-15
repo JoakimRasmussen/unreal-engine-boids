@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Animal.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Zebra.generated.h"
+#include "Zebra.generated.h" // This should be the last include
 
 /**
  * 
@@ -20,9 +20,6 @@ public:
 	AZebra();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zebra")
-	bool isDead;
 
 private:
 
