@@ -8,6 +8,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/TextBlock.h"
 #include "Lion.generated.h" // This should be the last include
 
 // Forward declaration
@@ -32,6 +34,7 @@ public:
 	bool AttackIsValid();
 	bool ShouldExitResting();
 	void TransitionToWandering();
+	void TransitionToResting();
 
 	// Behavior and action functions
 	void AttackTarget(AAnimal* Target);
@@ -60,11 +63,40 @@ protected:
 
 	// AI-related variables
 	float AttackCooldown = 2.0f;
-	float SightRadius = 1000.0f;
+	float SightRadius = 10000.0f;
+
+	float SprintSpeed;
+	float WanderSpeed;
+	float MaxSprintSpeed = 0.8f;
+	float MaxWanderSpeed = 0.35f;
+
+	float Stamina;
+	float Hunger;
+	const float MaxStamina = 100.0f;
+	const float MaxHunger = 100.0f;
+	const float MinStaminaThreshold = 30.0f;
+	const float StaminaDrainRate = 2.0f;
+	const float HungerDrainRate = 2.0f;
+	const float StaminaRegenRate = 4.0f;
+
+	void DrainStamina(float DeltaTime);
+	void DrainStamina(float DeltaTime, float DrainMultiplier);
+	void RegenerateStamina(float DeltaTime);
+	void DrainHunger(float DeltaTime);
+	bool HasStarved();
+	float CalculateSpeedFromStamina();
 
 	// Timer handles
 	FTimerHandle AttackEndTimer;
 
 	// Nearest zebra reference
 	AZebra* NearestZebra;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> DebugWidgetClass;
+
+	UUserWidget* DebugWidgetInstance;
+	void UpdateDebugWidget();
+
 };
+
