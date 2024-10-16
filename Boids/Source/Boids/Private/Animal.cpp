@@ -33,10 +33,8 @@ void AAnimal::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AAnimal::OnDeath()
+void AAnimal::Die()
 {
-	//Print what animal died
-	UE_LOG(LogTemp, Warning, TEXT("Animal type is Dead: %d"), static_cast<uint8>(AnimalType));
 	AnimalState = EAnimalState::EAS_Dead;
 
 	if (AnimalController)
@@ -67,6 +65,37 @@ void AAnimal::StartEating()
 	AnimalState = EAnimalState::EAS_Eating;
 	UE_LOG(LogTemp, Warning, TEXT("Eating"));
 }
+
+FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius)
+{
+	// Generate a random angle between 0 and 2*PI (for full circle rotation)
+	float RandomAngle = FMath::RandRange(0.0f, 2.0f * PI);
+
+	// Generate a random distance between MinReachRadius and MaxReachRadius
+	float RandomRadius = FMath::RandRange(MinReachRadius, MaxReachRadius);
+
+	// Calculate the random point in the XY plane
+	float RandomX = RandomRadius * FMath::Cos(RandomAngle);
+	float RandomY = RandomRadius * FMath::Sin(RandomAngle);
+
+	// Get the current location of the animal
+	FVector CurrentLocation = GetActorLocation();
+
+	// Calculate the random point within the bounds of the two circles
+	FVector RandomPoint = FVector(CurrentLocation.X + RandomX, CurrentLocation.Y + RandomY, CurrentLocation.Z);
+
+	// Return the random point
+	return RandomPoint;
+}
+
+FVector AAnimal::GetRandomPointWithinReach(float ReachRadius)
+{
+	// Call the overloaded version with MinReachRadius set to 0
+	return GetRandomPointWithinReach(0.0f, ReachRadius);
+}
+
+
+
 
 // Note: Turn off Flocking when used
 void AAnimal::SetRandomTarget()
@@ -118,6 +147,15 @@ void AAnimal::MoveTowardsLocation(FVector location)
 
 	// Move the actor in the given direction, using the calculated relative speed factor
 	this->MoveInDirection(Direction, RelativeSpeed);
+}
+
+void AAnimal::MoveTowardsLocation(FVector location, float speed)
+{
+	// Calculate direction vector (and normalize it to make it a unit vector)
+	FVector Direction = (location - this->GetActorLocation()).GetSafeNormal();
+
+	// Move the actor in the given direction, using the given speed factor
+	this->MoveInDirection(Direction, speed);
 }
 
 

@@ -28,6 +28,8 @@ void ALion::BeginPlay()
 
 	Stamina = MaxStamina; // Initialize stamina
 	Hunger = MaxHunger; // Initialize hunger
+	StaminaDrainRate = DefaultStaminaDrainRate; // Initialize stamina drain rate
+	SightRadius = DefaultSightRadius; // Initialize sight radius
 
     // Check if the widget class is assigned in the editor
     if (DebugWidgetClass)
@@ -44,68 +46,82 @@ void ALion::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (GetAnimalState() == EAnimalState::EAS_Dead)
-    {
-        return; // Skip processing if lion is dead
-    }
+    if (GetAnimalState() == EAnimalState::EAS_Dead) return;
 
-	// Drain hunger over time and check if the lion has starved
 	DrainHunger(DeltaTime);
-	if (HasStarved()) { this->OnDeath(); }
+	if (HasStarved()) { this->Die(); }
 
-
+    else if (IsDesperate())
+    {
+		SightRadius = DesperateSightRadius;
+		StaminaDrainRate = DesperateStaminaDrainRate;
+		bIsDesperate = true;
+	}
+	else
+	{
+		bIsDesperate = false;
+		SightRadius = DefaultSightRadius;
+		StaminaDrainRate = DefaultStaminaDrainRate;
+    }
 
     switch (GetAnimalState())
     {
     case EAnimalState::EAS_Resting:
+    {
 		RegenerateStamina(DeltaTime);
         if (ShouldExitResting())
-        {
             TransitionToWandering();
-        }
         break;
+    }
 
     case EAnimalState::EAS_Wandering:
+    {
 		DrainStamina(DeltaTime);
-		if (Stamina <= 0.2*MaxStamina)
-		{
+		if (NeedRest())
 			TransitionToResting();
-		}
-        if (HasReachedLocation())
-        {
-            CurrentWanderPoint = ChooseRandomPointWithinReach(1000.0f);
-        }
-        SetWanderDirection();
-        MoveInDirection(CurrentWanderDirection, 0.25f);
 
-        if (IsZebraInSight() && Stamina > MinStaminaThreshold && Hunger < 0.8f * MaxHunger )
+        else if (HasReachedLocation())
         {
-            BeginHunt();
+            CurrentWanderPoint = GetRandomPointWithinReach(800.0f, 1000.0f);
         }
+
+        SetWanderDirection();
+        MoveInDirection(CurrentWanderDirection, CalculateSpeedFromStamina());
+
+        // Transition to hunting if a zebra is in sight, the lion has enough stamina, and is hungry
+        // OR if the lion is desperate
+        if (ZebraInSight() && (EnoughStamina() && IsHungry()) || IsDesperate())
+        {
+            TransitionToHunting();
+        }
+
         break;
+    }
 
     case EAnimalState::EAS_Hunting:
-		DrainStamina(DeltaTime, 2.0f);
+    {
+        DrainStamina(DeltaTime);
 
-		// Stamina is less than threshold or zebra is out of sight
-		if (Stamina <= MinStaminaThreshold || !IsZebraInSight())
-		{
-			TransitionToWandering();
-		}
+        // Check if the lion should stop hunting (unless it is desperate)
+        if (!IsDesperate() && (!ZebraInSight() || !EnoughStamina() || !IsHungry()))
+        {
+            TransitionToWandering();
+            return;
+        }
 
-		else if (NearestZebra)
-		{
-			FVector ZebraLocation = NearestZebra->GetActorLocation();
-			FVector DirectionToZebra = ZebraLocation - GetActorLocation();
-			DirectionToZebra.Normalize();
-			MoveInDirection(DirectionToZebra, CalculateSpeedFromStamina());
-		}
+		MoveTowardsZebra();
 
-		break;
+        break;
+    }
 
     case EAnimalState::EAS_Attacking:
-        // Attack state logic is handled in AttackTarget or EndAttack
+    {
+        if (NearestZebra && !bIsAttacking)
+        {
+			AttackTarget(NearestZebra);
+        }
         break;
+    }
 
     default:
         break;
@@ -115,48 +131,39 @@ void ALion::Tick(float DeltaTime)
 }
 
 // State Transition Functions
-void ALion::BeginHunt()
+void ALion::TransitionToHunting()
 {
     AnimalState = EAnimalState::EAS_Hunting;
 }
 
 void ALion::EndAttack()
 {
-    GetCharacterMovement()->StopMovementImmediately();  // Stop movement after attack
+    GetCharacterMovement()->StopMovementImmediately();
     AnimalState = EAnimalState::EAS_Wandering;
-    NearestZebra = nullptr; // Reset the nearest zebra
-    GetWorldTimerManager().ClearTimer(AttackEndTimer);
+    NearestZebra = nullptr;
+	bIsAttacking = false;
 }
 
-// Must be in hunting state and hungry to attack
+// Must be in hunting state
 bool ALion::AttackIsValid()
 {
-	return AnimalState == EAnimalState::EAS_Hunting && Hunger < 0.8f*MaxHunger;
+	return AnimalState == EAnimalState::EAS_Hunting;
 }
 
 bool ALion::ShouldExitResting()
 {
-	return Stamina >= MaxStamina;
+	return Stamina >= MaxStamina || IsDesperate();
 }
 
 void ALion::TransitionToWandering()
 {
     AnimalState = EAnimalState::EAS_Wandering;
-    CurrentWanderPoint = ChooseRandomPointWithinReach(1000.0f);
+    CurrentWanderPoint = GetRandomPointWithinReach(150.0f, 1000.0f);
 }
 
 void ALion::TransitionToResting()
 {
 	AnimalState = EAnimalState::EAS_Resting;
-}
-
-// Movement and Direction Functions
-FVector ALion::ChooseRandomPointWithinReach(float ReachRadius)
-{
-    FVector CurrentLocation = GetActorLocation();
-    FVector RandomPoint = UKismetMathLibrary::RandomPointInBoundingBox(CurrentLocation, FVector(ReachRadius, ReachRadius, 0.0f));
-    RandomPoint.Z = CurrentLocation.Z; // Ensure movement is only in the X/Y plane
-    return RandomPoint;
 }
 
 void ALion::SetWanderDirection()
@@ -167,91 +174,83 @@ void ALion::SetWanderDirection()
 
 bool ALion::HasReachedLocation()
 {
-    return FVector::Dist(GetActorLocation(), CurrentWanderPoint) < 100.0f; // Example threshold
+    return FVector::Dist(GetActorLocation(), CurrentWanderPoint) < 100.0f;
 }
 
-bool ALion::IsZebraInSight()
+bool ALion::ZebraInSight()
 {
     if (!NearestZebra) return false;
     float DistanceToZebra = FVector::Dist(GetActorLocation(), NearestZebra->GetActorLocation());
     return DistanceToZebra < SightRadius;
 }
 
-// Attack Handling
 void ALion::AttackTarget(AAnimal* Target)
 {
-    AnimalState = EAnimalState::EAS_Attacking;
-
-    if (Target)
+    if (!Target || Target->GetAnimalState() == EAnimalState::EAS_Dead)
     {
-        FVector LionLocation = GetActorLocation();
-        FVector TargetLocation = Target->GetActorLocation();
-        FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(LionLocation, TargetLocation);
-        SetActorRotation(LookAtRotation);
+        return;
     }
 
-    // Set a timer to end the attack after AttackCooldown seconds
+	bIsAttacking = true;
+
+    // Look at the zebra
+    FVector LionLocation = GetActorLocation();
+    FVector TargetLocation = Target->GetActorLocation();
+    FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(LionLocation, TargetLocation);
+    SetActorRotation(LookAtRotation);
+
+    Target->Die();  // Kill the zebra
+
+    Hunger = MaxHunger;  // Reset hunger
+
     GetWorldTimerManager().SetTimer(AttackEndTimer, this, &ALion::EndAttack, AttackCooldown, false);
 }
 
 // Collision Handling
-void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+    int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     if (OtherActor && OtherActor != this)
     {
         AAnimal* Animal = Cast<AAnimal>(OtherActor);
-        if (Animal)
+        if (Animal && Animal->GetAnimalType() == EAnimalType::EAT_Zebra)
         {
-            if (Animal->GetAnimalType() == EAnimalType::EAT_Zebra)
+            if (Animal->GetAnimalState() == EAnimalState::EAS_Dead)
             {
-                if (!AttackIsValid() && Animal->GetAnimalState() == EAnimalState::EAS_Dead)
-                {
-                    return;
-                }
-                AttackTarget(Animal);
-                Animal->OnDeath();
-
-				Hunger = MaxHunger; // Reset hunger after eating
+                return;
             }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("The overlapped actor is not of type AAnimal."));
+
+            NearestZebra = Cast<AZebra>(Animal);
+
+            if (AttackIsValid())
+            {
+                AnimalState = EAnimalState::EAS_Attacking;
+            }
         }
     }
 }
 
+// Drain Stamina, which is affected by the current state
 void ALion::DrainStamina(float DeltaTime)
 {
-	Stamina = FMath::Clamp(Stamina - StaminaDrainRate * DeltaTime, 0.0f, MaxStamina);
-}
+	float DrainRateMultiplier = (AnimalState == EAnimalState::EAS_Wandering) ? WanderingStaminaDrainMultiplier :
+		(AnimalState == EAnimalState::EAS_Hunting) ? SprintingStaminaDrainMultiplier : 1.0f;
 
-void ALion::DrainStamina(float DeltaTime, float DrainMultiplier)
-{
-	Stamina = FMath::Clamp(Stamina - StaminaDrainRate * DeltaTime * DrainMultiplier, 0.0f, MaxStamina);
+	Stamina = FMath::Clamp(Stamina - StaminaDrainRate * DeltaTime * DrainRateMultiplier, 0.0f, MaxStamina);
 }
 
 void ALion::RegenerateStamina(float DeltaTime)
 {
-	float RegenRate = StaminaRegenRate;
-    if (Hunger < MaxHunger / 2)
-    {
-        RegenRate *= 0.8f;  // Slow regeneration if hunger is low
-    }
-
-	Stamina = FMath::Clamp(Stamina + RegenRate * DeltaTime, 0.0f, MaxStamina);
+	Stamina = FMath::Clamp(Stamina + StaminaRegenRate * DeltaTime, 0.0f, MaxStamina);
 }
 
+// Hunger drain is affected by the current state
 void ALion::DrainHunger(float DeltaTime)
 {
-	if (AnimalState == EAnimalState::EAS_Resting)
-	{
-		Hunger = FMath::Clamp(Hunger - HungerDrainRate * DeltaTime * 0.5f, 0.0f, MaxHunger);
-	}
-	else
-	{
-		Hunger = FMath::Clamp(Hunger - HungerDrainRate * DeltaTime, 0.0f, MaxHunger);
-	}
+    float DrainRateMultiplier = (AnimalState == EAnimalState::EAS_Resting) ? RestingHungerDrainMultiplier :
+        (AnimalState == EAnimalState::EAS_Hunting) ? HuntingHungerDrainMultiplier : 1.0f;
+
+    Hunger = FMath::Clamp(Hunger - HungerDrainRate * DrainRateMultiplier * DeltaTime, 0.0f, MaxHunger);
 }
 
 bool ALion::HasStarved()
@@ -262,9 +261,11 @@ bool ALion::HasStarved()
 float ALion::CalculateSpeedFromStamina()
 {
 	float NormalizedStamina = Stamina / MaxStamina;
+	float LowerBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxWanderSpeed : MinWanderSpeed;
+	float UpperBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxSprintSpeed : MaxWanderSpeed;
 
-	//float SpeedFactor = FMath::Cos(NormalizedStamina * PI/2);
-	return FMath::Lerp(MaxWanderSpeed, MaxSprintSpeed, NormalizedStamina);
+	float SpeedFactor = FMath::Cos(NormalizedStamina * PI / 2 - PI/2); // Cosine interpolation
+	return FMath::Lerp(LowerBound, UpperBound, SpeedFactor);
 }
 
 void ALion::UpdateDebugWidget()
@@ -276,6 +277,7 @@ void ALion::UpdateDebugWidget()
         UTextBlock* HungerText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("HungerText")));
         UTextBlock* SpeedText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("SpeedText")));
 		UTextBlock* StateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("StateText")));
+		UTextBlock* DesperateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("DesperateText")));
 
         if (StaminaText)
         {
@@ -289,7 +291,7 @@ void ALion::UpdateDebugWidget()
 
         if (SpeedText)
         {
-            SpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.2f"), CalculateSpeedFromStamina())));
+            SpeedText->SetText(FText::FromString(FString::Printf(TEXT("Available Speed: %.2f"), CalculateSpeedFromStamina())));
         }
 
         if (StateText)
@@ -301,5 +303,42 @@ void ALion::UpdateDebugWidget()
             StateText->SetText(FText::FromString(FString::Printf(TEXT("State: %s"), *StateString)));
         }
 
+		if (DesperateText)
+		{
+			DesperateText->SetText(FText::FromString(bIsDesperate ? "Desperate" : "Not Desperate"));
+		}
+
     }
 }
+
+bool ALion::NeedRest()
+{
+    return Stamina <= StaminaRestThreshold * MaxStamina;
+}
+
+// Enough stamina to hunt
+bool ALion::EnoughStamina()
+{
+	return Stamina > StaminaHuntThreshold * MaxStamina;
+}
+
+// Hungry enough to hunt
+bool ALion::IsHungry()
+{
+	return Hunger <= HungerThreshold * MaxHunger;
+}
+
+// Is desperate for food
+bool ALion::IsDesperate()
+{
+	return Hunger <= DesperateHungerThreshold * MaxHunger;
+}
+
+void ALion::MoveTowardsZebra()
+{
+    if (NearestZebra)
+    {
+		MoveTowardsLocation(NearestZebra->GetActorLocation(), CalculateSpeedFromStamina());
+    }
+}
+

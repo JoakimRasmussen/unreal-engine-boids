@@ -21,9 +21,10 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void OnDeath();
+	virtual void Die();
 
 	void MoveTowardsLocation(FVector location);
+	void MoveTowardsLocation(FVector location, float speed);
 
 	FORCEINLINE void MoveInDirection(FVector Direction, float SpeedFactor) { AddMovementInput(Direction, SpeedFactor); }
 
@@ -41,6 +42,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	void SetRandomTarget();
+	FVector GetRandomPointWithinReach(float ReachRadius);
+	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius);
 	void StartEating();
 	void MoveToTarget(AActor* Target);
 

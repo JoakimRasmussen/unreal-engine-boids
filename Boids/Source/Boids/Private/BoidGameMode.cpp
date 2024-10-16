@@ -17,7 +17,7 @@ void ABoidGameMode::BeginPlay()
 void ABoidGameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	ZebraFlocking();
+	//ZebraFlocking();
 	UpdateLionTargets();
 }
 
