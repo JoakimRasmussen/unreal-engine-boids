@@ -2,7 +2,6 @@
 
 
 #include "BoidGameMode.h"
-#include "Kismet/GameplayStatics.h"
 
 ABoidGameMode::ABoidGameMode()
 {
@@ -19,7 +18,7 @@ void ABoidGameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	ZebraFlocking();
-	LionFlocking();
+	UpdateLionTargets();
 }
 
 void ABoidGameMode::GetAllAnimals()
@@ -92,62 +91,46 @@ void ABoidGameMode::UpdateZebraMeanLocation()
 	}
 
 	ZebraMeanLocation /= AliveZebraCount;
-	// Print if the mean location has changed
-	if (LastZebraMeanLocation != ZebraMeanLocation)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Zebra Mean Location: %s"), *ZebraMeanLocation.ToString());
-	}
-	if (LastCount != AliveZebraCount)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Alive Zebra Count: %d"), AliveZebraCount);
-	}
 }
 
-void ABoidGameMode::LionFlocking()
+// Function to update each lion's nearest zebra
+void ABoidGameMode::UpdateLionTargets()
 {
 	for (ALion* Lion : Lions)
 	{
-		if (Lion->GetAnimalState() == EAnimalState::EAS_Hunting)
+		if (Lion->GetAnimalState() != EAnimalState::EAS_Dead)
 		{
-			if (Lion->HasReachedLocation())
-			{
-				Lion->LastKnownLocation = ZebraMeanLocation;
-			}
-
-			FVector DirectionOfZebras = (Lion->LastKnownLocation - Lion->GetActorLocation()).GetSafeNormal();
-			Lion->MoveInDirection(DirectionOfZebras, 0.5f);
-		}
-		else
-		{
-			// Wandering phase: If the lion is not hunting, make it wander in a smooth, drifting manner
-			if (Lion->GetAnimalState() != EAnimalState::EAS_Hunting)
-			{
-				Lion->LastKnownLocation = ZebraMeanLocation;
-				float DistanceToZebras = FVector::Dist(Lion->GetActorLocation(), Lion->LastKnownLocation);
-				if (DistanceToZebras < 1000.0f)
-				{
-					Lion->BeginHunt();  // Switch to hunting mode
-				}
-				else
-				{
-					// Randomly decide whether to apply the drift or not
-					if (FMath::RandRange(0.0f, 1.0f) < 0.05f)  // 5% chance to apply the drift
-					{
-						FVector RandomDrift = FMath::VRand();
-						RandomDrift.Z = 0;
-						RandomDrift *= 0.01f;
-
-						Lion->CurrentWanderDirection += RandomDrift;
-
-						Lion->CurrentWanderDirection.Normalize();
-					}
-
-					Lion->MoveInDirection(Lion->CurrentWanderDirection, 0.15f);
-				}
-			}
+			AZebra* NearestZebra = FindNearestZebra(Lion);
+			Lion->SetNearestZebra(NearestZebra);  // Update the lion's nearest zebra
 		}
 	}
 }
+
+AZebra* ABoidGameMode::FindNearestZebra(ALion* Lion)
+{
+	AZebra* NearestZebra = nullptr;
+	float NearestDistance = MAX_FLT;
+
+	for (AZebra* Zebra : Zebras)
+	{
+		if (Zebra->GetAnimalState() == EAnimalState::EAS_Dead)
+		{
+			// Skip dead zebras
+			continue;
+		}
+
+		float DistanceToZebra = FVector::Dist(Lion->GetActorLocation(), Zebra->GetActorLocation());
+		if (DistanceToZebra < NearestDistance)
+		{
+			NearestDistance = DistanceToZebra;
+			NearestZebra = Zebra;
+		}
+	}
+
+	return NearestZebra;
+}
+
+
 
 
 

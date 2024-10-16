@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Animal.h"
+#include "Zebra.h"
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Lion.generated.h" // This should be the last include
 
+// Forward declaration
 class USphereComponent;
 
 UCLASS()
@@ -17,32 +19,52 @@ class BOIDS_API ALion : public AAnimal
 	GENERATED_BODY()
 
 public:
-
+	// Constructor
 	ALion();
+
+	// Lifecycle functions
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	// State transition functions
 	void BeginHunt();
-
-	UFUNCTION()
-	void OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-								int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	void AttackTarget(AAnimal* Target);
 	void EndAttack();
-	void CycleStates();
-
-	bool HasReachedLocation();
 	bool AttackIsValid();
+	bool ShouldExitResting();
+	void TransitionToWandering();
 
-	FVector LastKnownLocation;
-	FVector CurrentWanderDirection;
+	// Behavior and action functions
+	void AttackTarget(AAnimal* Target);
+	void SetWanderDirection();
+	bool IsZebraInSight();
+
+	// Utility functions
+	FVector ChooseRandomPointWithinReach(float ReachRadius);
+	bool HasReachedLocation();
+
+	// Collision handling
+	UFUNCTION()
+	void OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	// Setter for nearest zebra
+	void SetNearestZebra(AZebra* Zebra) { NearestZebra = Zebra; }
 
 protected:
+	// Components
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* AttackSphere;
 
-private:
+	// Movement variables
+	FVector CurrentWanderPoint;
+	FVector CurrentWanderDirection;
 
+	// AI-related variables
+	float AttackCooldown = 2.0f;
+	float SightRadius = 1000.0f;
+
+	// Timer handles
 	FTimerHandle AttackEndTimer;
-	FTimerHandle StateChangeTimer;
+
+	// Nearest zebra reference
+	AZebra* NearestZebra;
 };

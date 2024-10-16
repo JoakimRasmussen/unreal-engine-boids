@@ -9,3 +9,6 @@
 .vs
 .vsconfig
 Boids.sln
+
+*.umap
+*.uasset
