@@ -19,6 +19,9 @@ ALion::ALion()
     // Set default animal type and initial state
     AnimalType = EAnimalType::EAT_Lion;
     AnimalState = EAnimalState::EAS_Resting;
+
+	DefaultStaminaDrainRate = StaminaDrainRate;
+	DefaultSightRadius = SightRadius;
 }
 
 // Lifecycle Functions
@@ -49,77 +52,37 @@ void ALion::Tick(float DeltaTime)
     if (GetAnimalState() == EAnimalState::EAS_Dead) return;
 
 	DrainHunger(DeltaTime);
-	if (HasStarved()) { this->Die(); }
-
-    else if (IsDesperate())
+	if (HasStarved()) 
     {
-		SightRadius = DesperateSightRadius;
-		StaminaDrainRate = DesperateStaminaDrainRate;
-		bIsDesperate = true;
-	}
-	else
-	{
-		bIsDesperate = false;
-		SightRadius = DefaultSightRadius;
-		StaminaDrainRate = DefaultStaminaDrainRate;
+        this->Die();
+		return;
     }
+
+	HandleDesperation();
 
     switch (GetAnimalState())
     {
     case EAnimalState::EAS_Resting:
     {
-		RegenerateStamina(DeltaTime);
-        if (ShouldExitResting())
-            TransitionToWandering();
+		HandleRestingState(DeltaTime);
         break;
     }
 
     case EAnimalState::EAS_Wandering:
     {
-		DrainStamina(DeltaTime);
-		if (NeedRest())
-			TransitionToResting();
-
-        else if (HasReachedLocation())
-        {
-            CurrentWanderPoint = GetRandomPointWithinReach(800.0f, 1000.0f);
-        }
-
-        SetWanderDirection();
-        MoveInDirection(CurrentWanderDirection, CalculateSpeedFromStamina());
-
-        // Transition to hunting if a zebra is in sight, the lion has enough stamina, and is hungry
-        // OR if the lion is desperate
-        if (ZebraInSight() && (EnoughStamina() && IsHungry()) || IsDesperate())
-        {
-            TransitionToHunting();
-        }
-
+		HandleWanderingState(DeltaTime);
         break;
     }
 
     case EAnimalState::EAS_Hunting:
     {
-        DrainStamina(DeltaTime);
-
-        // Check if the lion should stop hunting (unless it is desperate)
-        if (!IsDesperate() && (!ZebraInSight() || !EnoughStamina() || !IsHungry()))
-        {
-            TransitionToWandering();
-            return;
-        }
-
-		MoveTowardsZebra();
-
+		HandleHuntingState(DeltaTime);
         break;
     }
 
     case EAnimalState::EAS_Attacking:
     {
-        if (NearestZebra && !bIsAttacking)
-        {
-			AttackTarget(NearestZebra);
-        }
+		HandleAttackingState(DeltaTime);
         break;
     }
 
@@ -131,7 +94,7 @@ void ALion::Tick(float DeltaTime)
 }
 
 // State Transition Functions
-void ALion::TransitionToHunting()
+void ALion::StartHunting()
 {
     AnimalState = EAnimalState::EAS_Hunting;
 }
@@ -150,31 +113,84 @@ bool ALion::AttackIsValid()
 	return AnimalState == EAnimalState::EAS_Hunting;
 }
 
+void ALion::HandleRestingState(float DeltaTime)
+{
+    RegenerateStamina(DeltaTime);
+    if (ShouldExitResting())
+        StartWandering();
+}
+
+void ALion::HandleWanderingState(float DeltaTime)
+{
+    DrainStamina(DeltaTime);
+    if (NeedRest())
+    {
+        StartResting();
+        return;
+    }
+
+    if (HasReachedLocation(CurrentWanderPoint))
+    {
+        CurrentWanderPoint = GetRandomPointWithinReach(800.0f, 1000.0f, 160.0f);
+    }
+
+    MoveTowardsLocation(CurrentWanderPoint, CalculateSpeedFromStamina());
+
+    // Transition to hunting if a zebra is in sight, the lion has enough stamina, and is hungry
+    // OR if the lion is desperate
+    if (ZebraInSight() && (EnoughStamina() && IsHungry()) || IsDesperate())
+    {
+        StartHunting();
+    }
+}
+
+void ALion::HandleHuntingState(float DeltaTime)
+{
+    DrainStamina(DeltaTime);
+
+    // Check if the lion should stop hunting (unless it is desperate)
+    if (!IsDesperate() && (!ZebraInSight() || !EnoughStamina() || !IsHungry()))
+    {
+        StartWandering();
+        return;
+    }
+
+    MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+}
+
+void ALion::HandleAttackingState(float DeltaTime)
+{
+    if (NearestZebra && !bIsAttacking)
+    {
+        MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+        AttackTarget(NearestZebra);
+    }
+}
+
+// Updates variables like sight radius and stamina drain rate
+void ALion::HandleDesperation()
+{
+	if (IsDesperate())
+	{
+		SightRadius = DesperateSightRadius;
+		StaminaDrainRate = DesperateStaminaDrainRate;
+	}
+	else
+	{
+		SightRadius = DefaultSightRadius;
+		StaminaDrainRate = DefaultStaminaDrainRate;
+	}
+}
+
 bool ALion::ShouldExitResting()
 {
 	return Stamina >= MaxStamina || IsDesperate();
 }
 
-void ALion::TransitionToWandering()
+void ALion::StartWandering()
 {
     AnimalState = EAnimalState::EAS_Wandering;
     CurrentWanderPoint = GetRandomPointWithinReach(150.0f, 1000.0f);
-}
-
-void ALion::TransitionToResting()
-{
-	AnimalState = EAnimalState::EAS_Resting;
-}
-
-void ALion::SetWanderDirection()
-{
-    CurrentWanderDirection = CurrentWanderPoint - GetActorLocation();
-    CurrentWanderDirection.Normalize();
-}
-
-bool ALion::HasReachedLocation()
-{
-    return FVector::Dist(GetActorLocation(), CurrentWanderPoint) < 100.0f;
 }
 
 bool ALion::ZebraInSight()
@@ -253,16 +269,11 @@ void ALion::DrainHunger(float DeltaTime)
     Hunger = FMath::Clamp(Hunger - HungerDrainRate * DrainRateMultiplier * DeltaTime, 0.0f, MaxHunger);
 }
 
-bool ALion::HasStarved()
-{
-	return Hunger <= 0.0f;
-}
-
 float ALion::CalculateSpeedFromStamina()
 {
 	float NormalizedStamina = Stamina / MaxStamina;
-	float LowerBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxWanderSpeed : MinWanderSpeed;
-	float UpperBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxSprintSpeed : MaxWanderSpeed;
+	float LowerBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxWalkingSpeed : MinWalkingSpeed;
+	float UpperBound = (AnimalState == EAnimalState::EAS_Hunting) ? MaxSprintSpeed : MaxWalkingSpeed;
 
 	float SpeedFactor = FMath::Cos(NormalizedStamina * PI / 2 - PI/2); // Cosine interpolation
 	return FMath::Lerp(LowerBound, UpperBound, SpeedFactor);
@@ -305,15 +316,10 @@ void ALion::UpdateDebugWidget()
 
 		if (DesperateText)
 		{
-			DesperateText->SetText(FText::FromString(bIsDesperate ? "Desperate" : "Not Desperate"));
+			DesperateText->SetText(FText::FromString(IsDesperate() ? "Desperate" : "Not Desperate"));
 		}
 
     }
-}
-
-bool ALion::NeedRest()
-{
-    return Stamina <= StaminaRestThreshold * MaxStamina;
 }
 
 // Enough stamina to hunt
@@ -322,23 +328,10 @@ bool ALion::EnoughStamina()
 	return Stamina > StaminaHuntThreshold * MaxStamina;
 }
 
-// Hungry enough to hunt
-bool ALion::IsHungry()
-{
-	return Hunger <= HungerThreshold * MaxHunger;
-}
-
 // Is desperate for food
 bool ALion::IsDesperate()
 {
 	return Hunger <= DesperateHungerThreshold * MaxHunger;
 }
 
-void ALion::MoveTowardsZebra()
-{
-    if (NearestZebra)
-    {
-		MoveTowardsLocation(NearestZebra->GetActorLocation(), CalculateSpeedFromStamina());
-    }
-}
 

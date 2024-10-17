@@ -60,39 +60,107 @@ void AAnimal::MoveToTarget(AActor* Target)
 	AnimalController->MoveTo(MoveRequest, &NavPath);
 }
 
+float AAnimal::CalculateSpeedFromStamina()
+{
+	float NormalizedStamina = Stamina / MaxStamina;
+	float LowerBound = MinWalkingSpeed; // Could change depending on specific states
+	float UpperBound = MaxSprintSpeed;  // Could change depending on specific states
+
+	float SpeedFactor = FMath::Cos(NormalizedStamina * PI / 2 - PI / 2); // Cosine interpolation
+	return FMath::Lerp(LowerBound, UpperBound, SpeedFactor);
+}
+
+void AAnimal::DrainStamina(float DeltaTime)
+{
+	Stamina = FMath::Clamp(Stamina - StaminaDrainRate * DeltaTime, 0.0f, MaxStamina);
+}
+
+void AAnimal::RegenerateStamina(float DeltaTime)
+{
+	Stamina = FMath::Clamp(Stamina + StaminaRegenRate * DeltaTime, 0.0f, MaxStamina);
+}
+
+void AAnimal::DrainHunger(float DeltaTime)
+{
+	float CurrentDrainRate = (AnimalState == EAnimalState::EAS_Resting) ? 0.5 * HungerDrainRate : HungerDrainRate;
+	Hunger = FMath::Clamp(Hunger - CurrentDrainRate * DeltaTime, 0.0f, MaxHunger);
+}
+
+bool AAnimal::NeedRest()
+{
+	return Stamina <= StaminaRestThreshold * MaxStamina;
+}
+
+bool AAnimal::ShouldExitResting()
+{
+	return Stamina >= MaxStamina;
+}
+
+bool AAnimal::EnoughStamina()
+{
+	return Stamina >= 0.4 * MaxStamina;
+}
+
+bool AAnimal::IsHungry()
+{
+	return Hunger <= HungerThreshold * MaxHunger;
+}
+
+bool AAnimal::HasStarved()
+{
+	return Hunger <= 0.0f;
+}
+
+bool AAnimal::HasReachedLocation(FVector Location)
+{
+	return FVector::Dist(GetActorLocation(), Location) <= AcceptanceRadius;
+}
+
 void AAnimal::StartEating()
 {
 	AnimalState = EAnimalState::EAS_Eating;
-	UE_LOG(LogTemp, Warning, TEXT("Eating"));
+}
+
+void AAnimal::StartWandering()
+{
+	AnimalState = EAnimalState::EAS_Wandering;
+}
+
+void AAnimal::StartResting()
+{
+	AnimalState = EAnimalState::EAS_Resting;
+}
+
+FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees)
+{
+	FVector ForwardDirection = GetActorForwardVector();
+
+	float HalfConeAngle = ConeAngleDegrees / 2.0f;
+	float RandomAngle = FMath::RandRange(-HalfConeAngle, HalfConeAngle);
+
+	float RandomRadius = FMath::RandRange(MinReachRadius, MaxReachRadius);
+
+	// Create a rotation matrix from the random angle to rotate the forward direction
+	FRotator Rotation(0.0f, RandomAngle, 0.0f);
+	FVector RandomDirection = Rotation.RotateVector(ForwardDirection);
+
+	// Scale the random direction by the random radius to get a random point within the cone
+	FVector RandomPoint = GetActorLocation() + (RandomDirection * RandomRadius);
+
+	return RandomPoint;
 }
 
 FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius)
 {
-	// Generate a random angle between 0 and 2*PI (for full circle rotation)
-	float RandomAngle = FMath::RandRange(0.0f, 2.0f * PI);
-
-	// Generate a random distance between MinReachRadius and MaxReachRadius
-	float RandomRadius = FMath::RandRange(MinReachRadius, MaxReachRadius);
-
-	// Calculate the random point in the XY plane
-	float RandomX = RandomRadius * FMath::Cos(RandomAngle);
-	float RandomY = RandomRadius * FMath::Sin(RandomAngle);
-
-	// Get the current location of the animal
-	FVector CurrentLocation = GetActorLocation();
-
-	// Calculate the random point within the bounds of the two circles
-	FVector RandomPoint = FVector(CurrentLocation.X + RandomX, CurrentLocation.Y + RandomY, CurrentLocation.Z);
-
-	// Return the random point
-	return RandomPoint;
+	return GetRandomPointWithinReach(MinReachRadius, MaxReachRadius, 360.0f);
 }
 
 FVector AAnimal::GetRandomPointWithinReach(float ReachRadius)
 {
-	// Call the overloaded version with MinReachRadius set to 0
 	return GetRandomPointWithinReach(0.0f, ReachRadius);
 }
+
+
 
 
 
@@ -132,30 +200,20 @@ void AAnimal::SetRandomTarget()
 	}
 }
 
-void AAnimal::MoveTowardsLocation(FVector location)
-{
-	// Calculate direction vector (and normalize it to make it a unit vector)
-	FVector Direction = (location - this->GetActorLocation()).GetSafeNormal();
-
-	// Get current velocity and calculate speed magnitude (how fast the actor is moving)
-	FVector ActorSpeed = this->GetVelocity();
-	float CurrentSpeed = ActorSpeed.Size();
-
-	// Calculate the relative speed factor (0 to 1) based on current speed and max speed
-	float MaxSpeed = this->GetCharacterMovement()->MaxWalkSpeed;
-	float RelativeSpeed = CurrentSpeed / MaxSpeed;
-
-	// Move the actor in the given direction, using the calculated relative speed factor
-	this->MoveInDirection(Direction, RelativeSpeed);
-}
-
-void AAnimal::MoveTowardsLocation(FVector location, float speed)
+void AAnimal::MoveTowardsLocation(FVector location, float speedFactor)
 {
 	// Calculate direction vector (and normalize it to make it a unit vector)
 	FVector Direction = (location - this->GetActorLocation()).GetSafeNormal();
 
 	// Move the actor in the given direction, using the given speed factor
-	this->MoveInDirection(Direction, speed);
+	this->MoveInDirection(Direction, speedFactor);
+}
+
+void AAnimal::MoveTowardsOtherAnimal(AAnimal* OtherAnimal, float speedFactor)
+{
+	if (OtherAnimal == nullptr) return;
+	FVector OtherAnimalLocation = OtherAnimal->GetActorLocation();
+	this->MoveTowardsLocation(OtherAnimalLocation, speedFactor);
 }
 
 
