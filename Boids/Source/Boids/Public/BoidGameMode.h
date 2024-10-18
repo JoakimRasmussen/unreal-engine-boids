@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "Animal.h"
 #include "Zebra.h"
 #include "Lion.h"
@@ -30,6 +31,7 @@ public:
 	void GetAllAnimals();
 	void ZebraFlocking();
 	void LionFlocking();
+	void UpdateLionTargets();
 
 private:
 	
@@ -51,5 +53,5 @@ private:
 	TArray<AFoodSource*> GetAllFoodSources();
 
 	void UpdateZebraMeanLocation();
-
+	AZebra* FindNearestZebra(ALion* Lion);
 };

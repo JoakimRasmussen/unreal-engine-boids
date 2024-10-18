@@ -5,6 +5,7 @@
 
 AZebra::AZebra()
 {
+	AnimalType = EAnimalType::EAT_Zebra;
 }
 
 void AZebra::BeginPlay()
@@ -26,15 +27,16 @@ void AZebra::Tick(float DeltaTime)
 		AnimalState = EAnimalState::EAS_Resting;
 		MoveInDirection(FVector(0.0f, 0.0f, 0.0f), 0.0f);
 	}
+	
 	if (GetAnimalState() == EAnimalState::EAS_Resting)
 	{
-		if (GetStamina() >= 100.0f)
+		if (GetStamina() >= MaxStamina)
 		{
 			AnimalState = EAnimalState::EAS_Flocking;
 		}
-		if (GetStamina() < 100.0f)
+		if (GetStamina() < MaxStamina)
 		{
-			IncreaseStamina();
+			RegenerateStamina(DeltaTime);
 		}
 	}
 }
@@ -100,6 +102,5 @@ FVector AZebra::CalculateZebraDirection(FVector SpeedDifference, FVector Average
 		+ (SpeedDifference * this->GetAlignmentWeight())
 		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight()
 		+ AvoidanceVector * this->GetAvoidanceWeight());
-		
 	return Direction;
 }

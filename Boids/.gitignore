@@ -9,3 +9,5 @@
 .vs
 .vsconfig
 Boids.sln
+
+*.umap

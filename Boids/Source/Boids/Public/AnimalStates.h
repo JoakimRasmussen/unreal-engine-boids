@@ -10,5 +10,6 @@ enum class EAnimalState : uint8
 	EAS_Hunting UMETA(DisplayName = "Hunting"),
 	EAS_Attacking UMETA(DisplayName = "Attacking"),
 	EAS_Fleeing UMETA(DisplayName = "Fleeing"),
-	EAS_Dead UMETA(DisplayName = "Dead")
+	EAS_Dead UMETA(DisplayName = "Dead"),
+	EAS_Wandering UMETA(DisplayName = "Wandering")
 };
