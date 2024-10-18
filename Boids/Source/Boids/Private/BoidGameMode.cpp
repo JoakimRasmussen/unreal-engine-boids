@@ -70,17 +70,17 @@ void ABoidGameMode::ZebraFlocking()
 	FVector SpeedDifference;
 	FVector AveragePosition;
 	FVector AvoidanceVector;
+	FVector ClosestFoodSource;
+	FVector Direction;
+	float DistanceToFoodSource;
+	float DistanceToClosestFoodSource;
+	int Count;
 
 	for (AZebra* Zebra : Zebras)
 	{
 		if (Zebra->IsDead())
 		{
 			continue;
-		}
-		if (Zebra->GetAnimalState() == EAnimalState::EAS_Fleeing)
-		{
-			Zebra->MoveInDirection(Zebra->GetFleeDirection(), 1.0f);
-			Zebra->DecreaseStamina();
 		}
 
 		// Regular flocking
@@ -89,6 +89,9 @@ void ABoidGameMode::ZebraFlocking()
 			SpeedDifference = FVector(0, 0, 0);
 			AveragePosition = FVector(0, 0, 0);
 			AvoidanceVector = FVector(0, 0, 0);
+			ClosestFoodSource = FVector(0, 0, 0);
+			DistanceToClosestFoodSource = INFINITY;
+			Count = 0;
 			
 			// 6-th sense to avoid Lions. (Scent perhaps)
 			for (ALion* Lion : Lions)
@@ -96,33 +99,45 @@ void ABoidGameMode::ZebraFlocking()
 				Zebra->AvoidPredator(Lion, AvoidanceVector);
 			}
 
-			if (FoodSources.Num() != 0)
-			{
-				for (AFoodSource* FoodSource : FoodSources)
-				{
-					Zebra->FoodSourceAttraction(AveragePosition);
-				}
-			}
 
 			for (AZebra* OtherZebra : Zebras)
 			{
-				Zebra->FlockingCalculations(OtherZebra, SpeedDifference, AveragePosition, AvoidanceVector);
+				if (Zebra->DistanceToActor(OtherZebra) < Zebra->GetFlockingRadius())
+				{
+					Zebra->FlockingCalculations(OtherZebra, SpeedDifference, AveragePosition, AvoidanceVector);
+					Count++;
+				}
 			}
+			
+			SpeedDifference /= Count;
+			AveragePosition /= Count;
+			AvoidanceVector /= Count;
 
-			SpeedDifference /= Zebras.Num() - 1;
-			AveragePosition /= Zebras.Num() - 1;
-			AvoidanceVector /= Zebras.Num() - 1;
-
-			FVector Direction = Zebra->CalculateZebraDirection(SpeedDifference, AveragePosition, AvoidanceVector);
-			// Need to find a smart way to adjust SpeedFactor...
-			Zebra->MoveInDirection(Direction.GetSafeNormal(), 0.5f);
-
-			//Zebra->SetVelocity(Zebra->GetVelocity() 
-			//	+ (SpeedDifference * Zebra->GetAlignmentWeight()) 
-			//	+ (AveragePosition - Zebra->GetActorLocation()) * Zebra->GetCohesionWeight() 
-			//	+ AvoidanceVector * Zebra->GetAvoidanceWeight());
-			// Set Zebras rotation in the world to face the direction of movement
-			//Zebra->SetActorRotation(FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Zebra->GetVelocity().Y, Zebra->GetVelocity().X)), 0));
+			if (FoodSources.Num() != 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("FoodSources.Num() != 0"));
+				for (AFoodSource* FoodSource : FoodSources)
+				{
+					DistanceToFoodSource = Zebra->DistanceToActor(FoodSource);
+					if (DistanceToFoodSource < DistanceToClosestFoodSource)
+					{
+						DistanceToClosestFoodSource = DistanceToFoodSource;
+						ClosestFoodSource = FoodSource->GetActorLocation();
+					}
+				}
+			}
+			
+			Direction = Zebra->CalculateZebraDirection(SpeedDifference, AveragePosition, AvoidanceVector);
+			if (Zebra->GetHunger() < 10.0f)
+			{
+				// Need to find a smart way to adjust SpeedFactor...
+				Zebra->MoveInDirection((ClosestFoodSource - Zebra->GetActorLocation()).GetSafeNormal(), 0.5f);
+			}
+			else
+			{
+				// Need to find a smart way to adjust SpeedFactor...
+				Zebra->MoveInDirection(Direction.GetSafeNormal(), 0.5f);
+			}
 		}
 	}
 }

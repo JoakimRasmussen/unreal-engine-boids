@@ -6,6 +6,8 @@
 AZebra::AZebra()
 {
 	AnimalType = EAnimalType::EAT_Zebra;
+	Stamina = MaxStamina;
+	Hunger = MaxHunger;
 }
 
 void AZebra::BeginPlay()
@@ -22,10 +24,16 @@ void AZebra::Tick(float DeltaTime)
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetFlockingRadius(), 12, FColor::Green, false, -1, 0, 1);
 	}
 	
-	if (GetStamina() < 0.0f)
+	if (GetStamina() <= 0.0f)
 	{
 		AnimalState = EAnimalState::EAS_Resting;
 		MoveInDirection(FVector(0.0f, 0.0f, 0.0f), 0.0f);
+	}
+
+	if (GetAnimalState() == EAnimalState::EAS_Fleeing)
+	{
+		MoveInDirection(GetFleeDirection(), 1.0f);
+		DrainStamina(DeltaTime);
 	}
 	
 	if (GetAnimalState() == EAnimalState::EAS_Resting)
@@ -72,9 +80,9 @@ void AZebra::AvoidPredator(AActor* Predator, FVector& AvoidanceVector)
 	}
 }
 
-void AZebra::FoodSourceAttraction(FVector& AveragePosition)
+void AZebra::FoodSourceAttraction(FVector& AveragePosition, FVector FoodSourceLocation)
 {
-	AveragePosition += GetActorLocation() * GetFoodSourceAttraction();
+	AveragePosition += FoodSourceLocation;
 }
 
 // Name-placeholder... 
@@ -88,7 +96,7 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, 
 	if (this != OtherZebra)
 	{
 		SpeedDifference += OtherZebra->GetVelocity() - this->GetVelocity();
-		AveragePosition += OtherZebra->GetActorLocation();
+		AveragePosition += (OtherZebra->GetActorLocation());
 		if (this->DistanceToActor(OtherZebra) < this->GetAvoidanceRadius())
 		{
 			AvoidanceVector += this->GetActorLocation() - OtherZebra->GetActorLocation();
@@ -100,7 +108,7 @@ FVector AZebra::CalculateZebraDirection(FVector SpeedDifference, FVector Average
 {
 	FVector Direction = (this->GetVelocity()
 		+ (SpeedDifference * this->GetAlignmentWeight())
-		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight()
+		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight() 
 		+ AvoidanceVector * this->GetAvoidanceWeight());
 	return Direction;
 }

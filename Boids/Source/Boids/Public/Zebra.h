@@ -34,7 +34,7 @@ public:
 	void SetMoveDirection(FVector MoveDirection);
 	void AvoidPredator(AActor* Predator, FVector& AvoidanceVector);
 	void FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, FVector& AveragePosition, FVector& AvoidanceVector);
-	void FoodSourceAttraction(FVector& AveragePosition);
+	void FoodSourceAttraction(FVector& AveragePosition, FVector FoodSourceLocation);
 	FVector CalculateZebraDirection(FVector SpeedDifference, FVector AveragePosition, FVector AvoidanceVector) const;
 
 private:
@@ -67,7 +67,8 @@ public:
 	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
 	FORCEINLINE float GetFlockingRadius() const { return FlockingRadius; }
 	FORCEINLINE float DistanceToActor(AActor* Actor) const { return FVector::Dist(GetActorLocation(), Actor->GetActorLocation()); }
-	FORCEINLINE float GetFoodSourceAttraction() const { return (MaxHunger/Hunger) * FoodSourceAttractionWeight; }
+	FORCEINLINE float GetFoodSourceAttraction() const { return Hunger/MaxHunger; }
+	FORCEINLINE float GetHunger() const { return Hunger; }
 	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
 
 	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
