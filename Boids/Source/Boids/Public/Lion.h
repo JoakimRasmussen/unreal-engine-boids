@@ -53,6 +53,7 @@ public:
 	// Behavior and action functions
 	void AttackTarget(AAnimal* Target);
 	bool ZebraInSight();
+	bool TryUnstuck(FVector& OutNewLocation, float ScanRadius = 150.0f, int32 ScanSteps = 12);
 
 	// Collision handling
 	UFUNCTION()

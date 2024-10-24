@@ -27,13 +27,15 @@ public:
 	void SetDeadState();
 	virtual void Die();
 
-	void MoveTowardsLocation(FVector location, float speedFactor);
-	void MoveTowardsOtherAnimal(AAnimal* OtherAnimal, float speedFactor);	
+	void MoveTowardsLocation(FVector DesiredLocation, float SpeedFactor);
+	void MoveTowardsOtherAnimal(AAnimal* OtherAnimal, float SpeedFactor);	
 
 	void SetRandomTarget();
 	FVector GetRandomPointWithinReach(float ReachRadius);
 	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius);
 	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees);
+	FVector GetRandomPointNear(FVector TargetLocation, float MinReachRadius, float MaxReachRadius);
+	bool IsPathBlocked(FVector TargetLocation);
 
 	virtual float CalculateSpeedFromStamina();
 
@@ -46,6 +48,7 @@ public:
 	virtual bool EnoughStamina();
 	virtual bool IsHungry();
 	virtual bool HasStarved();
+	virtual bool IsStuck();
 
 	bool HasReachedLocation(FVector Location);
 
@@ -79,7 +82,7 @@ protected:
 	float MaxHunger = 100.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger", meta = (ClampMin = "0.0", ClampMax = "1.0",
 		ToolTip = "The percentage of MaxHunger below which the animal will start to look for food."))
-	float HungerThreshold = 0.70f;
+	float HungerThreshold = 0.85f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger")
 	float HungerDrainRate = 1.5f;
 

@@ -116,10 +116,23 @@ bool AAnimal::HasStarved()
 	return Hunger <= 0.0f;
 }
 
-bool AAnimal::HasReachedLocation(FVector Location)
+bool AAnimal::IsStuck()
 {
-	return FVector::Dist(GetActorLocation(), Location) <= AcceptanceRadius;
+	if (AnimalState == EAnimalState::EAS_Resting) return false;
+	return GetVelocity().Size() < 10.0f;
 }
+
+bool AAnimal::HasReachedLocation(FVector Location) // Ignore Z
+{
+	FVector CurrentLocation = GetActorLocation();
+	CurrentLocation.Z = 0.0f;
+	FVector TargetLocation = Location;
+	TargetLocation.Z = 0.0f;
+
+	float Distance = FVector::Dist(CurrentLocation, TargetLocation);
+	return Distance <= 10.0f;
+}
+
 
 void AAnimal::StartEating()
 {
@@ -151,6 +164,15 @@ FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachR
 
 	// Scale the random direction by the random radius to get a random point within the cone
 	FVector RandomPoint = GetActorLocation() + (RandomDirection * RandomRadius);
+
+	return RandomPoint;
+}
+
+FVector AAnimal::GetRandomPointNear(FVector TargetLocation, float MinReachRadius, float MaxReachRadius)
+{
+	float RandomRadius = FMath::RandRange(MinReachRadius, MaxReachRadius);
+	FVector RandomPoint = TargetLocation + (FMath::VRand() * RandomRadius);
+	RandomPoint.Z = GetActorLocation().Z; // Keep the Z coordinate the same as the animal's location
 
 	return RandomPoint;
 }
@@ -205,20 +227,50 @@ void AAnimal::SetRandomTarget()
 	}
 }
 
-void AAnimal::MoveTowardsLocation(FVector location, float speedFactor)
+void AAnimal::MoveTowardsLocation(FVector DesiredLocation, float SpeedFactor)
 {
 	// Calculate direction vector (and normalize it to make it a unit vector)
-	FVector Direction = (location - this->GetActorLocation()).GetSafeNormal();
+	FVector Direction = (DesiredLocation - this->GetActorLocation()).GetSafeNormal();
 
 	// Move the actor in the given direction, using the given speed factor
-	this->MoveInDirection(Direction, speedFactor);
+	this->MoveInDirection(Direction, SpeedFactor);
 }
 
-void AAnimal::MoveTowardsOtherAnimal(AAnimal* OtherAnimal, float speedFactor)
+void AAnimal::MoveTowardsOtherAnimal(AAnimal* OtherAnimal, float SpeedFactor)
 {
 	if (OtherAnimal == nullptr) return;
 	FVector OtherAnimalLocation = OtherAnimal->GetActorLocation();
-	this->MoveTowardsLocation(OtherAnimalLocation, speedFactor);
+	this->MoveTowardsLocation(OtherAnimalLocation, SpeedFactor);
+}
+
+bool AAnimal::IsPathBlocked(FVector TargetLocation)
+{
+	FHitResult HitResult;
+	FVector Start = GetActorLocation();
+	FVector End = TargetLocation;
+
+	// Line trace (raycast) to check if there's an obstacle in the way
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);  // Ignore the animal itself
+
+	// Perform the line trace
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Visibility,  // Use the visibility channel, adjust if needed
+		CollisionParams
+	);
+
+	// Debug line for visualization (optional)
+	if (bDebugMode)
+	{
+		FColor LineColor = bHit ? FColor::Red : FColor::Green;
+		DrawDebugLine(GetWorld(), Start, End, LineColor, false, 1.0f, 0, 2.0f);
+	}
+
+	// Return true if the line trace hit an obstacle, indicating the path is blocked
+	return bHit;
 }
 
 

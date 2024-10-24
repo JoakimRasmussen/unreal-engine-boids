@@ -22,6 +22,7 @@ ALion::ALion()
 
     DefaultStaminaDrainRate = StaminaDrainRate;
     DefaultSightRadius = SightRadius;
+	bDebugMode = true;
 }
 
 // Lifecycle Functions
@@ -48,6 +49,8 @@ void ALion::BeginPlay()
 void ALion::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+	Speed = GetVelocity().Size();
+    UpdateDebugWidget();
 
     if (GetAnimalState() == EAnimalState::EAS_Dead) return;
 
@@ -56,6 +59,12 @@ void ALion::Tick(float DeltaTime)
     {
         this->Die();
         return;
+    }
+
+    if (bDebugMode)
+    {
+        // Draw a debug sphere representing the lion's sight radius
+        DrawDebugSphere(GetWorld(), GetActorLocation(), SightRadius, 24, FColor::Red, false, -1.0f, 0, 2.0f);
     }
 
     HandleDesperation();
@@ -89,8 +98,6 @@ void ALion::Tick(float DeltaTime)
     default:
         break;
     }
-
-    UpdateDebugWidget();
 }
 
 // State Transition Functions
@@ -129,9 +136,20 @@ void ALion::HandleWanderingState(float DeltaTime)
         return;
     }
 
-    if (HasReachedLocation(CurrentWanderPoint))
+    FVector NewLocation;
+    if (IsStuck() && TryUnstuck(NewLocation))
     {
+        CurrentWanderPoint = NewLocation;
+    }
+    else if (HasReachedLocation(CurrentWanderPoint))
+    {
+        // If the destination is reached, choose a new random point
         CurrentWanderPoint = GetRandomPointWithinReach(800.0f, 1000.0f, 160.0f);
+    }
+    else if (IsPathBlocked(CurrentWanderPoint))
+    {
+        // If the path to the current wander point is blocked, choose a new point
+        CurrentWanderPoint = GetRandomPointWithinReach(100.0f, 200.0f, 120.0f);
     }
 
     MoveTowardsLocation(CurrentWanderPoint, CalculateSpeedFromStamina());
@@ -155,7 +173,25 @@ void ALion::HandleHuntingState(float DeltaTime)
         return;
     }
 
-    MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+    FVector NewLocation;
+    if (IsStuck() && TryUnstuck(NewLocation))
+    {
+        // Move towards the new unstuck location
+        MoveTowardsLocation(NewLocation, CalculateSpeedFromStamina());
+    }
+    else if (IsPathBlocked(NearestZebra->GetActorLocation()))
+    {
+        // If the direct path is blocked, try to find an alternate path
+        if (TryUnstuck(NewLocation))
+        {
+            MoveTowardsLocation(NewLocation, CalculateSpeedFromStamina());
+        }
+    }
+    else
+    {
+        // Move directly towards the zebra if the path is clear
+        MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+    }
 }
 
 void ALion::HandleAttackingState(float DeltaTime)
@@ -200,12 +236,68 @@ bool ALion::ZebraInSight()
     return DistanceToZebra < SightRadius;
 }
 
+bool ALion::TryUnstuck(FVector& OutNewLocation, float ScanRadius, int32 ScanSteps)
+{
+    // Scan in a circle around the animal to find an open path
+    float AngleStep = 360.0f / ScanSteps;
+    FVector BestLocation;
+    float ClosestDistance = FLT_MAX;
+    bool bFoundValidDirection = false;
+
+    for (int32 Step = 0; Step < ScanSteps; ++Step)
+    {
+        // Calculate the direction for the current angle
+        float Angle = FMath::DegreesToRadians(Step * AngleStep);
+        FVector Direction = FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.0f);
+        FVector PotentialLocation = GetActorLocation() + Direction * ScanRadius;
+
+        // Check if this potential location is not blocked
+        if (!IsPathBlocked(PotentialLocation))
+        {
+            // If hunting, prioritize paths closer to the target (zebra)
+            if (AnimalState == EAnimalState::EAS_Hunting && NearestZebra)
+            {
+                float DistanceToZebra = FVector::Dist(PotentialLocation, NearestZebra->GetActorLocation());
+                if (DistanceToZebra < ClosestDistance)
+                {
+                    BestLocation = PotentialLocation;
+                    ClosestDistance = DistanceToZebra;
+                    bFoundValidDirection = true;
+                }
+            }
+            else
+            {
+                // If not in hunting state, take the first valid location
+                BestLocation = PotentialLocation;
+                bFoundValidDirection = true;
+                break;  // Exit early as we found a suitable point
+            }
+        }
+    }
+
+    // If a valid location is found, output it
+    if (bFoundValidDirection)
+    {
+        OutNewLocation = BestLocation;
+        return true;
+    }
+
+    // If all directions are blocked, select a random nearby point as a last resort
+    OutNewLocation = GetRandomPointWithinReach(100.0f, 200.0f, 120.0f);
+    return false;
+}
+
+
+
+
 void ALion::AttackTarget(AAnimal* Target)
 {
     if (!Target || Target->GetAnimalState() == EAnimalState::EAS_Dead)
     {
         return;
     }
+
+    UE_LOG(LogTemp, Warning, TEXT("Lion attacking"));
 
     bIsAttacking = true;
 
@@ -228,9 +320,11 @@ void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* O
 {
     if (OtherActor && OtherActor != this)
     {
+        UE_LOG(LogTemp, Warning, TEXT("Lion attack sphere overlap"));
         AAnimal* Animal = Cast<AAnimal>(OtherActor);
         if (Animal && Animal->GetAnimalType() == EAnimalType::EAT_Zebra)
         {
+            UE_LOG(LogTemp, Warning, TEXT("Lion found zebra"));
             if (Animal->GetAnimalState() == EAnimalState::EAS_Dead)
             {
                 return;
@@ -285,8 +379,11 @@ void ALion::UpdateDebugWidget()
     {
         // Cast the widget to access specific elements like text blocks
         UTextBlock* StaminaText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("StaminaText")));
+		UTextBlock* StaminaThresholdText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("StaminaThresholdText")));
         UTextBlock* HungerText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("HungerText")));
+		UTextBlock* HungerThresholdText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("HungerThresholdText")));
         UTextBlock* SpeedText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("SpeedText")));
+		UTextBlock* ActualSpeedText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("ActualSpeedText")));
         UTextBlock* StateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("StateText")));
         UTextBlock* DesperateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("DesperateText")));
 
@@ -295,15 +392,30 @@ void ALion::UpdateDebugWidget()
             StaminaText->SetText(FText::FromString(FString::Printf(TEXT("Stamina: %.2f"), Stamina)));
         }
 
+		if (StaminaThresholdText)
+		{
+			StaminaThresholdText->SetText(FText::FromString(FString::Printf(TEXT("| %.2f"), StaminaHuntThreshold * MaxStamina)));
+		}
+
         if (HungerText)
         {
             HungerText->SetText(FText::FromString(FString::Printf(TEXT("Hunger: %.2f"), Hunger)));
         }
 
+		if (HungerThresholdText)
+		{
+			HungerThresholdText->SetText(FText::FromString(FString::Printf(TEXT("| %.2f"), HungerThreshold * MaxHunger)));
+		}
+
         if (SpeedText)
         {
-            SpeedText->SetText(FText::FromString(FString::Printf(TEXT("Available Speed: %.2f"), CalculateSpeedFromStamina())));
+            SpeedText->SetText(FText::FromString(FString::Printf(TEXT("| %.2f"), CalculateSpeedFromStamina())));
         }
+
+		if (ActualSpeedText)
+		{
+			ActualSpeedText->SetText(FText::FromString(FString::Printf(TEXT("Speed: %.2f"), Speed)));
+		}
 
         if (StateText)
         {
