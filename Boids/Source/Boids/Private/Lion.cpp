@@ -13,12 +13,20 @@ ALion::ALion()
     // Initialize the attack sphere and attach it to the root component
     AttackSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackSphere"));
     AttackSphere->SetupAttachment(RootComponent);
-    AttackSphere->InitSphereRadius(250.0f);
+    AttackSphere->InitSphereRadius(200.0f);
     AttackSphere->OnComponentBeginOverlap.AddDynamic(this, &ALion::OnAttackSphereOverlap);
+
+	// Set the collision properties of the attack sphere
+    AttackSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    AttackSphere->SetCollisionObjectType(ECC_WorldDynamic);
+    AttackSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+    AttackSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);  // Overlap with characters (zebra)
+    AttackSphere->SetGenerateOverlapEvents(true);
+
 
     // Set default animal type and initial state
     AnimalType = EAnimalType::EAT_Lion;
-    AnimalState = EAnimalState::EAS_Resting;
+    AnimalState = EAnimalState::EAS_Wandering;
 
     DefaultStaminaDrainRate = StaminaDrainRate;
     DefaultSightRadius = SightRadius;
@@ -65,6 +73,13 @@ void ALion::Tick(float DeltaTime)
     {
         // Draw a debug sphere representing the lion's sight radius
         DrawDebugSphere(GetWorld(), GetActorLocation(), SightRadius, 24, FColor::Red, false, -1.0f, 0, 2.0f);
+
+		// Draw a debug sphere representing the lion's attack radius
+        FVector SphereLocation = AttackSphere->GetComponentLocation();
+		DrawDebugSphere(GetWorld(), SphereLocation, AttackSphere->GetUnscaledSphereRadius(), 24, FColor::Green, false, -1.0f, 0, 2.0f);
+
+        // Draw a debug sphere for the CurrentWanderPoint
+        DrawDebugSphere(GetWorld(), CurrentWanderPoint, 10.0f, 12, FColor::Blue, false, -1.0f, 0, 2.0f);
     }
 
     HandleDesperation();
@@ -136,31 +151,35 @@ void ALion::HandleWanderingState(float DeltaTime)
         return;
     }
 
-    FVector NewLocation;
-    if (IsStuck() && TryUnstuck(NewLocation))
+    // If the lion is stuck, find an unstuck location and move towards it
+    if (IsStuck())
     {
-        CurrentWanderPoint = NewLocation;
+        CurrentWanderPoint = FindUnstuckLocation();
+        MoveTowardsLocation(CurrentWanderPoint, CalculateSpeedFromStamina());
+        return;  // Exit early if we moved to a new unstuck position
     }
+
+    // If the destination is reached, choose a new random point
     else if (HasReachedLocation(CurrentWanderPoint))
     {
-        // If the destination is reached, choose a new random point
         CurrentWanderPoint = GetRandomPointWithinReach(800.0f, 1000.0f, 160.0f);
     }
+    // If the path to the current wander point is blocked, choose a new nearby point
     else if (IsPathBlocked(CurrentWanderPoint))
     {
-        // If the path to the current wander point is blocked, choose a new point
-        CurrentWanderPoint = GetRandomPointWithinReach(100.0f, 200.0f, 120.0f);
+        CurrentWanderPoint = GetRandomPointWithinReach(100.0f, 200.0f, 240.0f, true);
     }
 
+    // Move towards the current or new wander point if not stuck
     MoveTowardsLocation(CurrentWanderPoint, CalculateSpeedFromStamina());
 
-    // Transition to hunting if a zebra is in sight, the lion has enough stamina, and is hungry
-    // OR if the lion is desperate
+    // Transition to hunting if conditions are met
     if (ZebraInSight() && (EnoughStamina() && IsHungry()) || IsDesperate())
     {
         StartHunting();
     }
 }
+
 
 void ALion::HandleHuntingState(float DeltaTime)
 {
@@ -173,26 +192,27 @@ void ALion::HandleHuntingState(float DeltaTime)
         return;
     }
 
-    FVector NewLocation;
-    if (IsStuck() && TryUnstuck(NewLocation))
+    // If the lion is stuck, find an unstuck location and move towards it
+    if (IsStuck())
     {
-        // Move towards the new unstuck location
-        MoveTowardsLocation(NewLocation, CalculateSpeedFromStamina());
+        MoveTowardsLocation(FindUnstuckLocation(), CalculateSpeedFromStamina());
+        return;
     }
+
+    // If the path to the zebra is blocked but the lion is not stuck, choose a nearby point
     else if (IsPathBlocked(NearestZebra->GetActorLocation()))
     {
-        // If the direct path is blocked, try to find an alternate path
-        if (TryUnstuck(NewLocation))
-        {
-            MoveTowardsLocation(NewLocation, CalculateSpeedFromStamina());
-        }
+		FVector NearbyPoint = GetRandomPointNear(NearestZebra->GetActorLocation(), 200.0f, 800.0f);
+        MoveTowardsLocation(NearbyPoint, CalculateSpeedFromStamina());
     }
+    // Move directly towards the zebra if the path is clear
     else
     {
-        // Move directly towards the zebra if the path is clear
         MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
     }
 }
+
+
 
 void ALion::HandleAttackingState(float DeltaTime)
 {
@@ -226,7 +246,7 @@ bool ALion::ShouldExitResting()
 void ALion::StartWandering()
 {
     AnimalState = EAnimalState::EAS_Wandering;
-    CurrentWanderPoint = GetRandomPointWithinReach(150.0f, 1000.0f);
+    CurrentWanderPoint = GetRandomPointWithinReach(150.0f, 1000.0f, 180.0f);
 }
 
 bool ALion::ZebraInSight()
@@ -236,7 +256,7 @@ bool ALion::ZebraInSight()
     return DistanceToZebra < SightRadius;
 }
 
-bool ALion::TryUnstuck(FVector& OutNewLocation, float ScanRadius, int32 ScanSteps)
+FVector ALion::FindUnstuckLocation(float ScanRadius, int32 ScanSteps)
 {
     // Scan in a circle around the animal to find an open path
     float AngleStep = 360.0f / ScanSteps;
@@ -275,18 +295,15 @@ bool ALion::TryUnstuck(FVector& OutNewLocation, float ScanRadius, int32 ScanStep
         }
     }
 
-    // If a valid location is found, output it
+    // If a valid location is found, return it
     if (bFoundValidDirection)
     {
-        OutNewLocation = BestLocation;
-        return true;
+        return BestLocation;
     }
 
-    // If all directions are blocked, select a random nearby point as a last resort
-    OutNewLocation = GetRandomPointWithinReach(100.0f, 200.0f, 120.0f);
-    return false;
+    // If all directions are blocked, return a random nearby point as a last resort
+    return GetRandomPointWithinReach(100.0f, 200.0f, 360.0f);
 }
-
 
 
 
@@ -318,15 +335,17 @@ void ALion::AttackTarget(AAnimal* Target)
 void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    UE_LOG(LogTemp, Warning, TEXT("Overlap detected with another actor."));
     if (OtherActor && OtherActor != this)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Lion attack sphere overlap"));
+        UE_LOG(LogTemp, Warning, TEXT("Actor is valid and not self."));
         AAnimal* Animal = Cast<AAnimal>(OtherActor);
         if (Animal && Animal->GetAnimalType() == EAnimalType::EAT_Zebra)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Lion found zebra"));
+            UE_LOG(LogTemp, Warning, TEXT("Lion found zebra."));
             if (Animal->GetAnimalState() == EAnimalState::EAS_Dead)
             {
+                UE_LOG(LogTemp, Warning, TEXT("Zebra is dead. Ignoring."));
                 return;
             }
 
@@ -334,10 +353,12 @@ void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* O
 
             if (AttackIsValid())
             {
+                UE_LOG(LogTemp, Warning, TEXT("Attack is valid. Changing state to Attacking."));
                 AnimalState = EAnimalState::EAS_Attacking;
             }
         }
     }
+
 }
 
 // Drain Stamina, which is affected by the current state
@@ -386,6 +407,7 @@ void ALion::UpdateDebugWidget()
 		UTextBlock* ActualSpeedText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("ActualSpeedText")));
         UTextBlock* StateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("StateText")));
         UTextBlock* DesperateText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("DesperateText")));
+		UTextBlock* IsStuckText = Cast<UTextBlock>(DebugWidgetInstance->GetWidgetFromName(TEXT("IsStuckText")));
 
         if (StaminaText)
         {
@@ -429,6 +451,11 @@ void ALion::UpdateDebugWidget()
         if (DesperateText)
         {
             DesperateText->SetText(FText::FromString(IsDesperate() ? "Desperate" : "Not Desperate"));
+        }
+
+        if (IsStuckText)
+        {
+            IsStuckText->SetText(FText::FromString(IsStuck() ? "Stuck" : "Not Stuck"));
         }
 
     }

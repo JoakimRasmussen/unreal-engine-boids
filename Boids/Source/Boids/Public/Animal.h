@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "AnimalStates.h"
 #include "AnimalTypes.h"
 #include "Animal.generated.h"  // This should be the last include
@@ -34,6 +35,7 @@ public:
 	FVector GetRandomPointWithinReach(float ReachRadius);
 	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius);
 	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees);
+	FVector GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees, bool bBehind);
 	FVector GetRandomPointNear(FVector TargetLocation, float MinReachRadius, float MaxReachRadius);
 	bool IsPathBlocked(FVector TargetLocation);
 
@@ -60,6 +62,11 @@ public:
 	
 
 protected:
+
+	FVector LastCheckedLocation;
+	float LastCheckTime;
+	const float StuckThresholdDistance = 10.0f; // Threshold distance to determine if stuck
+	const float CheckInterval = 0.1f;           // Interval in seconds to check if stuck
 	
 	// --- Stamina variables ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Stamina")

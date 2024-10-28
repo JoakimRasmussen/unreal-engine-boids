@@ -16,6 +16,10 @@ AAnimal::AAnimal()
 	PrimaryActorTick.bCanEverTick = true;
 	AnimalType = EAnimalType::EAT_Other;
 	AnimalState = EAnimalState::EAS_Flocking;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);  // Allow overlap with lion’s AttackSphere
+	GetCapsuleComponent()->SetGenerateOverlapEvents(true);  // Ensure overlaps are enabled
+
 }
 
 // Called when the game starts or when spawned
@@ -119,8 +123,34 @@ bool AAnimal::HasStarved()
 bool AAnimal::IsStuck()
 {
 	if (AnimalState == EAnimalState::EAS_Resting) return false;
-	return GetVelocity().Size() < 10.0f;
+	if (Speed <= 0.1f) return true; // Fast check for stuck state when not moving
+
+	// Get the current location and time
+	FVector CurrentLocation = GetActorLocation();
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+
+	// Check if enough time has passed since the last check
+	if (CurrentTime - LastCheckTime >= CheckInterval)
+	{
+		// Calculate the horizontal distance moved
+		FVector FlatCurrentLocation = CurrentLocation;
+		FlatCurrentLocation.Z = 0.0f;
+		FVector FlatLastCheckedLocation = LastCheckedLocation;
+		FlatLastCheckedLocation.Z = 0.0f;
+		float DistanceMoved = FVector::Dist(FlatCurrentLocation, FlatLastCheckedLocation);
+
+		// Update last check time and position
+		LastCheckedLocation = FlatCurrentLocation;
+		LastCheckTime = CurrentTime;
+
+		// If the distance moved is below the threshold, consider it stuck
+		return DistanceMoved < StuckThresholdDistance;
+	}
+
+	// If not enough time has passed, assume not stuck
+	return false;
 }
+
 
 bool AAnimal::HasReachedLocation(FVector Location) // Ignore Z
 {
@@ -151,14 +181,20 @@ void AAnimal::StartResting()
 
 FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees)
 {
-	FVector ForwardDirection = GetActorForwardVector();
+	return GetRandomPointWithinReach(MinReachRadius, MaxReachRadius, ConeAngleDegrees, false);
+}
+
+FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius, float ConeAngleDegrees, bool bBehind)
+{
+	// Determine the forward direction, and invert it if the cone should be behind the animal
+	FVector ForwardDirection = bBehind ? -GetActorForwardVector() : GetActorForwardVector();
 
 	float HalfConeAngle = ConeAngleDegrees / 2.0f;
 	float RandomAngle = FMath::RandRange(-HalfConeAngle, HalfConeAngle);
 
 	float RandomRadius = FMath::RandRange(MinReachRadius, MaxReachRadius);
 
-	// Create a rotation matrix from the random angle to rotate the forward direction
+	// Create a rotation matrix from the random angle to rotate the forward (or backward) direction
 	FRotator Rotation(0.0f, RandomAngle, 0.0f);
 	FVector RandomDirection = Rotation.RotateVector(ForwardDirection);
 
@@ -166,6 +202,16 @@ FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachR
 	FVector RandomPoint = GetActorLocation() + (RandomDirection * RandomRadius);
 
 	return RandomPoint;
+}
+
+FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius)
+{
+	return GetRandomPointWithinReach(MinReachRadius, MaxReachRadius, 360.0f, false);
+}
+
+FVector AAnimal::GetRandomPointWithinReach(float ReachRadius)
+{
+	return GetRandomPointWithinReach(0.0f, ReachRadius, 360.0f, false);
 }
 
 FVector AAnimal::GetRandomPointNear(FVector TargetLocation, float MinReachRadius, float MaxReachRadius)
@@ -176,20 +222,6 @@ FVector AAnimal::GetRandomPointNear(FVector TargetLocation, float MinReachRadius
 
 	return RandomPoint;
 }
-
-FVector AAnimal::GetRandomPointWithinReach(float MinReachRadius, float MaxReachRadius)
-{
-	return GetRandomPointWithinReach(MinReachRadius, MaxReachRadius, 360.0f);
-}
-
-FVector AAnimal::GetRandomPointWithinReach(float ReachRadius)
-{
-	return GetRandomPointWithinReach(0.0f, ReachRadius);
-}
-
-
-
-
 
 
 // Note: Turn off Flocking when used
