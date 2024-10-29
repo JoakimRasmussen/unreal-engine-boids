@@ -72,6 +72,7 @@ void ABoidGameMode::ZebraFlocking()
 	FVector AvoidanceVector;
 	FVector ClosestFoodSourcePosition;
 	FVector Direction;
+	
 	float DistanceToFoodSource;
 	float DistanceToClosestFoodSource;
 	int Count;
@@ -83,14 +84,15 @@ void ABoidGameMode::ZebraFlocking()
 			continue;
 		}
 
+		SpeedDifference = FVector(0, 0, 0);
+		AveragePosition = Zebra->GetActorLocation();
+		AvoidanceVector = FVector(0, 0, 0);
+		ClosestFoodSourcePosition = FVector(0, 0, 0);
+		DistanceToClosestFoodSource = INFINITY;
+		
 		// Regular flocking
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Flocking)
 		{
-			SpeedDifference = FVector(0, 0, 0);
-			AveragePosition = FVector(0, 0, 0);
-			AvoidanceVector = FVector(0, 0, 0);
-			ClosestFoodSourcePosition = FVector(0, 0, 0);
-			DistanceToClosestFoodSource = INFINITY;
 			Count = 0;
 			
 			// 6-th sense to avoid Lions. (Scent perhaps)
@@ -115,7 +117,6 @@ void ABoidGameMode::ZebraFlocking()
 
 			if (FoodSources.Num() != 0)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("FoodSources.Num() != 0"));
 				for (AFoodSource* FoodSource : FoodSources)
 				{
 					DistanceToFoodSource = Zebra->DistanceToActor(FoodSource);

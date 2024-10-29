@@ -22,9 +22,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	void Eating(float DeltaTime);
-
 	void OutOfStamina();
+	void Eating(float DeltaTime);
 	void Fleeing(float DeltaTime);
 	void Resting(float DeltaTime);
 
