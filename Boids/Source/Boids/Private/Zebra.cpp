@@ -13,6 +13,11 @@ AZebra::AZebra()
 void AZebra::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CohesionWeight += FMath::RandRange(-0.05f, 0.05f);
+	AvoidanceWeight += FMath::RandRange(-0.05f, 0.05f);
+	AlignmentWeight += FMath::RandRange(-0.05f, 0.05f);
+	Hunger += FMath::RandRange(-10.0f, 10.0f);
 }
 
 void AZebra::Tick(float DeltaTime)
