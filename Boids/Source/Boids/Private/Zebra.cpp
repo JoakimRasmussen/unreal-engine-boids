@@ -105,9 +105,10 @@ void AZebra::SetMoveDirection(FVector NewDirection)
 	MoveDirection = NewDirection;
 }
 
-void AZebra::AvoidPredator(AActor* Predator, FVector& AvoidanceVector)
+void AZebra::AvoidPredator(AActor* Predator)
 {
 	float DistanceToPredator = this->DistanceToActor(Predator);
+
 	if (DistanceToPredator < GetAvoidanceRadius())
 	{
 		if (DistanceToPredator < GetPredatorFleeDistance())
@@ -116,17 +117,17 @@ void AZebra::AvoidPredator(AActor* Predator, FVector& AvoidanceVector)
 			SetFleeDirection(GetActorLocation(), Predator->GetActorLocation());
 			SetMoveDirection(FleeDirection);
 		}
-		AvoidanceVector += (GetActorLocation() - Predator->GetActorLocation()) * GetPredatorAvoidanceWeight();
+		AverageVelocity += (GetActorLocation() - Predator->GetActorLocation()) * GetPredatorAvoidanceWeight();
 	}
 }
 
-void AZebra::FoodSourceAttraction(FVector& AveragePosition, FVector FoodSourceLocation)
+void AZebra::FoodSourceAttraction(FVector FoodSourceLocation)
 {
 	AveragePosition += FoodSourceLocation;
 }
 
 // Name-placeholder... 
-void AZebra::FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, FVector& AveragePosition, FVector& AvoidanceVector)
+void AZebra::FlockingCalculations(AZebra* OtherZebra)
 {
 	if (OtherZebra->DistanceToActor(this) > this->GetFlockingRadius() || OtherZebra->IsDead() || OtherZebra->IsFleeing())
 	{
@@ -139,16 +140,15 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, 
 		AveragePosition += (OtherZebra->GetActorLocation());
 		if (this->DistanceToActor(OtherZebra) < this->GetAvoidanceRadius())
 		{
-			AvoidanceVector += this->GetActorLocation() - OtherZebra->GetActorLocation();
+			AverageVelocity += this->GetActorLocation() - OtherZebra->GetActorLocation();
 		}
 	}
 }
 
-FVector AZebra::CalculateZebraDirection(FVector SpeedDifference, FVector AveragePosition, FVector AvoidanceVector) const
+void AZebra::CalculateZebraDirection()
 {
-	FVector Direction = (this->GetVelocity()
-		+ (SpeedDifference * this->GetAlignmentWeight())
+	Direction = (this->GetVelocity()
+		+ (SpeedDifference * this->GetAlignmentWeight()) 
 		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight() 
-		+ AvoidanceVector * this->GetAvoidanceWeight());
-	return Direction;
+		+ AverageVelocity * this->GetAvoidanceWeight());
 }

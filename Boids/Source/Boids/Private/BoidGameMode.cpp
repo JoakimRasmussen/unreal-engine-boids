@@ -67,9 +67,6 @@ void ABoidGameMode::ZebraFlocking()
 {
 	UpdateZebraMeanLocation();
 
-	FVector SpeedDifference;
-	FVector AveragePosition;
-	FVector AvoidanceVector;
 	FVector ClosestFoodSourcePosition;
 	FVector Direction;
 	
@@ -84,11 +81,12 @@ void ABoidGameMode::ZebraFlocking()
 			continue;
 		}
 
-		SpeedDifference = FVector(0, 0, 0);
-		AveragePosition = Zebra->GetActorLocation();
-		AvoidanceVector = FVector(0, 0, 0);
 		ClosestFoodSourcePosition = FVector(0, 0, 0);
 		DistanceToClosestFoodSource = INFINITY;
+		
+		Zebra->AveragePosition = Zebra->GetActorLocation();
+		Zebra->SpeedDifference = FVector(0, 0, 0);
+		Zebra->AverageVelocity = FVector(0, 0, 0);
 		
 		// Regular flocking
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Flocking)
@@ -98,23 +96,22 @@ void ABoidGameMode::ZebraFlocking()
 			// 6-th sense to avoid Lions. (Scent perhaps)
 			for (ALion* Lion : Lions)
 			{
-				Zebra->AvoidPredator(Lion, AvoidanceVector);
+				Zebra->AvoidPredator(Lion);
 			}
-
 
 			for (AZebra* OtherZebra : Zebras)
 			{
 				if (Zebra->DistanceToActor(OtherZebra) < Zebra->GetFlockingRadius())
 				{
-					Zebra->FlockingCalculations(OtherZebra, SpeedDifference, AveragePosition, AvoidanceVector);
+					Zebra->FlockingCalculations(OtherZebra);
 					Count++;
 				}
 			}
-			
-			SpeedDifference /= Count;
-			AveragePosition /= Count;
-			AvoidanceVector /= Count;
 
+			Zebra->SpeedDifference /= Count;
+			Zebra->AveragePosition /= Count;
+			Zebra->AverageVelocity /= Count;
+			
 			if (FoodSources.Num() != 0)
 			{
 				for (AFoodSource* FoodSource : FoodSources)
@@ -124,11 +121,13 @@ void ABoidGameMode::ZebraFlocking()
 					{
 						DistanceToClosestFoodSource = DistanceToFoodSource;
 						ClosestFoodSourcePosition = FoodSource->GetActorLocation();
+						Zebra->ClosestFoodSource = ClosestFoodSourcePosition;
 					}
 				}
 			}
 			
-			Direction = Zebra->CalculateZebraDirection(SpeedDifference, AveragePosition, AvoidanceVector);
+			Zebra->CalculateZebraDirection();
+			
 			if (Zebra->GetHunger() < 10.0f)
 			{
 				// Need to find a smart way to adjust SpeedFactor...
@@ -137,8 +136,7 @@ void ABoidGameMode::ZebraFlocking()
 			}
 			else
 			{
-				// Need to find a smart way to adjust SpeedFactor...
-				Zebra->MoveInDirection(Direction.GetSafeNormal(), 0.5f);
+				Zebra->MoveInDirection(Zebra->Direction.GetSafeNormal(), 0.5f);
 			}
 		}
 	}
