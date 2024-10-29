@@ -70,7 +70,7 @@ void ABoidGameMode::ZebraFlocking()
 	FVector SpeedDifference;
 	FVector AveragePosition;
 	FVector AvoidanceVector;
-	FVector ClosestFoodSource;
+	FVector ClosestFoodSourcePosition;
 	FVector Direction;
 	float DistanceToFoodSource;
 	float DistanceToClosestFoodSource;
@@ -89,7 +89,7 @@ void ABoidGameMode::ZebraFlocking()
 			SpeedDifference = FVector(0, 0, 0);
 			AveragePosition = FVector(0, 0, 0);
 			AvoidanceVector = FVector(0, 0, 0);
-			ClosestFoodSource = FVector(0, 0, 0);
+			ClosestFoodSourcePosition = FVector(0, 0, 0);
 			DistanceToClosestFoodSource = INFINITY;
 			Count = 0;
 			
@@ -122,7 +122,7 @@ void ABoidGameMode::ZebraFlocking()
 					if (DistanceToFoodSource < DistanceToClosestFoodSource)
 					{
 						DistanceToClosestFoodSource = DistanceToFoodSource;
-						ClosestFoodSource = FoodSource->GetActorLocation();
+						ClosestFoodSourcePosition = FoodSource->GetActorLocation();
 					}
 				}
 			}
@@ -131,7 +131,8 @@ void ABoidGameMode::ZebraFlocking()
 			if (Zebra->GetHunger() < 10.0f)
 			{
 				// Need to find a smart way to adjust SpeedFactor...
-				Zebra->MoveInDirection((ClosestFoodSource - Zebra->GetActorLocation()).GetSafeNormal(), 0.5f);
+				Zebra->MoveInDirection((ClosestFoodSourcePosition - Zebra->GetActorLocation()).GetSafeNormal(), 0.5f);
+				Zebra->FoodWithinReach(ClosestFoodSourcePosition);
 			}
 			else
 			{
@@ -198,8 +199,6 @@ TArray<ALion*> ABoidGameMode::GetAllLions()
 	}
 	return LionCollection;
 }
-
-
 
 AZebra* ABoidGameMode::FindNearestZebra(ALion* Lion)
 {

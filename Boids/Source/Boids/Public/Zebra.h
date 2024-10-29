@@ -22,6 +22,12 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	void Eating(float DeltaTime);
+
+	void OutOfStamina();
+	void Fleeing(float DeltaTime);
+	void Resting(float DeltaTime);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zebra")
 	bool isDead;
 
@@ -35,6 +41,7 @@ public:
 	void AvoidPredator(AActor* Predator, FVector& AvoidanceVector);
 	void FlockingCalculations(AZebra* OtherZebra, FVector& SpeedDifference, FVector& AveragePosition, FVector& AvoidanceVector);
 	void FoodSourceAttraction(FVector& AveragePosition, FVector FoodSourceLocation);
+	void FoodWithinReach(FVector FoodSource);
 	FVector CalculateZebraDirection(FVector SpeedDifference, FVector AveragePosition, FVector AvoidanceVector) const;
 
 private:

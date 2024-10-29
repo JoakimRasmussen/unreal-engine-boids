@@ -89,6 +89,11 @@ void AAnimal::RegenerateStamina(float DeltaTime)
 	Stamina = FMath::Clamp(Stamina + StaminaRegenRate * DeltaTime, 0.0f, MaxStamina);
 }
 
+void AAnimal::RegenerateHunger(float DeltaTime)
+{
+	Hunger = FMath::Clamp(Hunger + HungerRegenRate * DeltaTime, 0.0f, MaxHunger);
+}
+
 void AAnimal::DrainHunger(float DeltaTime)
 {
 	float CurrentDrainRate = (AnimalState == EAnimalState::EAS_Resting) ? 0.5 * HungerDrainRate : HungerDrainRate;

@@ -44,6 +44,7 @@ public:
 	virtual void DrainStamina(float DeltaTime);
 	virtual void RegenerateStamina(float DeltaTime);
 	virtual void DrainHunger(float DeltaTime);
+	virtual void RegenerateHunger(float DeltaTime);
 
 	virtual bool NeedRest();
 	virtual bool ShouldExitResting();
@@ -92,6 +93,8 @@ protected:
 	float HungerThreshold = 0.85f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger")
 	float HungerDrainRate = 1.5f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger")
+	float HungerRegenRate = 5.0f;
 
 	// --- Speed variables ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Speed")
