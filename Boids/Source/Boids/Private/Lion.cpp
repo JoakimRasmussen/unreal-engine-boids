@@ -335,17 +335,13 @@ void ALion::AttackTarget(AAnimal* Target)
 void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
     int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    UE_LOG(LogTemp, Warning, TEXT("Overlap detected with another actor."));
     if (OtherActor && OtherActor != this)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Actor is valid and not self."));
         AAnimal* Animal = Cast<AAnimal>(OtherActor);
         if (Animal && Animal->GetAnimalType() == EAnimalType::EAT_Zebra)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Lion found zebra."));
             if (Animal->GetAnimalState() == EAnimalState::EAS_Dead)
             {
-                UE_LOG(LogTemp, Warning, TEXT("Zebra is dead. Ignoring."));
                 return;
             }
 
@@ -353,7 +349,6 @@ void ALion::OnAttackSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* O
 
             if (AttackIsValid())
             {
-                UE_LOG(LogTemp, Warning, TEXT("Attack is valid. Changing state to Attacking."));
                 AnimalState = EAnimalState::EAS_Attacking;
             }
         }
