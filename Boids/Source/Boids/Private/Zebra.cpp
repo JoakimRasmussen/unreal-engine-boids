@@ -27,6 +27,7 @@ void AZebra::Tick(float DeltaTime)
 	if (bDebugMode)
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetFlockingRadius(), 12, FColor::Green, false, -1, 0, 1);
+		DrawDebugSphere(GetWorld(), GetActorLocation(), GetPredatorFleeDistance(), 12, FColor::Red, false, -1, 0, 1);
 	}
 	
 	OutOfStamina();

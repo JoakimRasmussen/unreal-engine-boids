@@ -13,6 +13,8 @@ void ABoidGameMode::BeginPlay()
 	Super::BeginPlay();
 	GetAllAnimals();
 	FoodSources = GetAllFoodSources();
+
+	
 }
 
 void ABoidGameMode::Tick(float DeltaTime)
