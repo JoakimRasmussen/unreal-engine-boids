@@ -18,6 +18,8 @@ void AZebra::BeginPlay()
 	AvoidanceWeight += FMath::RandRange(-0.05f, 0.05f);
 	AlignmentWeight += FMath::RandRange(-0.05f, 0.05f);
 	Hunger += FMath::RandRange(-10.0f, 10.0f);
+	
+	HomePosition = GetActorLocation();
 }
 
 void AZebra::Tick(float DeltaTime)
@@ -127,6 +129,16 @@ void AZebra::AvoidPredator(AActor* Predator)
 	}
 }
 
+void AZebra::AvoidBarrier(AActor* Barrier)
+{
+	float DistanceToPredator = this->DistanceToActor(Barrier);
+
+	if (DistanceToPredator < GetBarrierAvoidanceRadius())
+	{
+		AverageVelocity += (GetActorLocation() - Barrier->GetActorLocation()) * GetBarrierWeight();
+	}
+}
+
 void AZebra::FoodSourceAttraction(FVector FoodSourceLocation)
 {
 	AveragePosition += FoodSourceLocation;
@@ -149,6 +161,9 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra)
 			AverageVelocity += this->GetActorLocation() - OtherZebra->GetActorLocation();
 		}
 	}
+
+	
+	
 }
 
 void AZebra::CalculateZebraDirection()
@@ -157,4 +172,16 @@ void AZebra::CalculateZebraDirection()
 		+ (SpeedDifference * this->GetAlignmentWeight()) 
 		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight() 
 		+ AverageVelocity * this->GetAvoidanceWeight());
+}
+
+bool AZebra::IsFarFromHome()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Distance to home: %f"), FVector::Dist(GetActorLocation(), HomePosition));
+	return FVector::Dist(this->GetActorLocation(), this->GetHomePosition()) > 500.0f;
+}
+
+void AZebra::ReverseDirection()
+{
+	Direction.X = -Direction.X;
+	Direction.Y = -Direction.Y;
 }

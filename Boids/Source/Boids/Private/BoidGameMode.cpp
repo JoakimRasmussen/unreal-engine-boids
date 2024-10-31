@@ -13,8 +13,7 @@ void ABoidGameMode::BeginPlay()
 	Super::BeginPlay();
 	GetAllAnimals();
 	FoodSources = GetAllFoodSources();
-
-	
+	Barriers = GetAllBarriers();	
 }
 
 void ABoidGameMode::Tick(float DeltaTime)
@@ -75,7 +74,7 @@ void ABoidGameMode::ZebraFlocking()
 	float DistanceToFoodSource;
 	float DistanceToClosestFoodSource;
 	int Count;
-
+	
 	for (AZebra* Zebra : Zebras)
 	{
 		if (Zebra->IsDead())
@@ -83,12 +82,16 @@ void ABoidGameMode::ZebraFlocking()
 			continue;
 		}
 
-		ClosestFoodSourcePosition = FVector(0, 0, 0);
+		float ClosestDistanceToBarrier = INFINITY;
+		ABarrier* ClosestBarrier = nullptr;
+		
+		// TESTING, SHOULD BE (0, 0,0)
+		ClosestFoodSourcePosition;
 		DistanceToClosestFoodSource = INFINITY;
 		
 		Zebra->AveragePosition = Zebra->GetActorLocation();
-		Zebra->SpeedDifference = FVector(0, 0, 0);
-		Zebra->AverageVelocity = FVector(0, 0, 0);
+		//Zebra->SpeedDifference = FVector(0, 0, 0);
+		//Zebra->AverageVelocity = FVector(0, 0, 0);
 		
 		// Regular flocking
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Flocking)
@@ -99,6 +102,19 @@ void ABoidGameMode::ZebraFlocking()
 			for (ALion* Lion : Lions)
 			{
 				Zebra->AvoidPredator(Lion);
+				Count++;
+			}
+			for (ABarrier* Barrier : Barriers)
+			{
+				if (Barrier && Zebra->DistanceToActor(Barrier) < ClosestDistanceToBarrier)
+				{
+					ClosestBarrier = Barrier;
+					ClosestDistanceToBarrier = Zebra->DistanceToActor(Barrier);
+				}
+			}
+			if (ClosestBarrier)
+			{
+				Zebra->AvoidBarrier(ClosestBarrier);
 			}
 
 			for (AZebra* OtherZebra : Zebras)
@@ -113,6 +129,15 @@ void ABoidGameMode::ZebraFlocking()
 			Zebra->SpeedDifference /= Count;
 			Zebra->AveragePosition /= Count;
 			Zebra->AverageVelocity /= Count;
+
+
+			if (Zebra->SpeedDifference == FVector(0, 0, 0) && Zebra->AverageVelocity == FVector(0, 0, 0))
+			{
+				if (Zebra->IsFarFromHome())
+				{
+					Zebra->MoveTowardsLocation(Zebra->GetHomePosition(), 1.0f);
+				}
+			}
 			
 			if (FoodSources.Num() != 0)
 			{
@@ -199,6 +224,23 @@ TArray<ALion*> ABoidGameMode::GetAllLions()
 		}
 	}
 	return LionCollection;
+}
+
+TArray<ABarrier*> ABoidGameMode::GetAllBarriers()
+{
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABarrier::StaticClass(), BarrierActors);
+
+	TArray<ABarrier*> BarrierCollection;
+	for (AActor* BarrierActor : BarrierActors)
+	{
+		ABarrier* Barrier = Cast<ABarrier>(BarrierActor);
+		if (Barrier)
+		{
+			BarrierCollection.Add(Barrier);
+		}
+	}
+	
+	return BarrierCollection;
 }
 
 AZebra* ABoidGameMode::FindNearestZebra(ALion* Lion)

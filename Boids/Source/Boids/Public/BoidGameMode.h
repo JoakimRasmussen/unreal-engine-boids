@@ -8,6 +8,7 @@
 #include "Animal.h"
 #include "Zebra.h"
 #include "Lion.h"
+#include "Barrier.h"
 #include "FoodSource.h"
 #include "BoidGameMode.generated.h"
 
@@ -43,6 +44,9 @@ private:
 
 	TArray<AActor*> FoodSourceActors;
 	TArray<AFoodSource*> FoodSources;
+
+	TArray<AActor*> BarrierActors;
+	TArray<ABarrier*> Barriers;
 	
 	
 	FVector ZebraMeanLocation;
@@ -50,6 +54,7 @@ private:
 
 	TArray<AZebra*> GetAllZebras();
 	TArray<ALion*> GetAllLions();
+	TArray<ABarrier*> GetAllBarriers();
 	TArray<AFoodSource*> GetAllFoodSources();
 
 	void UpdateZebraMeanLocation();

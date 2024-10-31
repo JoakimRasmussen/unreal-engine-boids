@@ -38,17 +38,22 @@ public:
 	void SetFleeDirection(FVector CurrentPosition, FVector PredatorPosition);
 	void SetMoveDirection(FVector MoveDirection);
 	void AvoidPredator(AActor* Predator);
+	void AvoidBarrier(AActor* Barrier);
 	void FlockingCalculations(AZebra* OtherZebra);
 	void FoodSourceAttraction(FVector FoodSourceLocation);
 	void FoodWithinReach(FVector FoodSource);
 	void CalculateZebraDirection();
-
+	bool IsFarFromHome();
 
 	FVector SpeedDifference;
 	FVector AveragePosition;
 	FVector AverageVelocity;
-	FVector Direction;
 	FVector ClosestFoodSource;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector Direction;
+	UFUNCTION(BlueprintCallable)
+	void ReverseDirection();
 
 private:
 
@@ -59,7 +64,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float AlignmentWeight = 0.001f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float BarrierWeight = 10.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float AvoidanceRadius = 10.0f;
+	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
+	float BarrierAvoidanceRadius = 500.0f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float PredatorAvoidanceWeight = 2.0f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
@@ -69,8 +79,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float FoodSourceAttractionWeight = 1.0f;
 
-
-
+	FVector HomePosition;
 
 public:
 	
@@ -78,12 +87,16 @@ public:
 	FORCEINLINE float GetAvoidanceWeight() const { return AvoidanceWeight; }
 	FORCEINLINE float GetAlignmentWeight() const { return AlignmentWeight; }
 	FORCEINLINE float GetAvoidanceRadius() const { return AvoidanceRadius; }
+	FORCEINLINE float GetBarrierWeight() const { return BarrierWeight; }
+	FORCEINLINE float GetBarrierAvoidanceRadius() const { return BarrierAvoidanceRadius; }
 	FORCEINLINE float GetPredatorAvoidanceWeight() const { return PredatorAvoidanceWeight; }
 	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
 	FORCEINLINE float GetFlockingRadius() const { return FlockingRadius; }
 	FORCEINLINE float DistanceToActor(AActor* Actor) const { return FVector::Dist(GetActorLocation(), Actor->GetActorLocation()); }
 	FORCEINLINE float GetFoodSourceAttraction() const { return MaxHunger/Hunger; }
 	FORCEINLINE float GetHunger() const { return Hunger; }
+	
+	FORCEINLINE FVector GetHomePosition() const { return HomePosition; }
 	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
 
 	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
