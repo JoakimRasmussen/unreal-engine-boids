@@ -31,8 +31,8 @@ public:
 
 	void GetAllAnimals();
 	void ZebraFlocking();
-	void LionFlocking();
 	void UpdateLionTargets();
+	FVector GetClosestLocation(FVector CurrentLocation, TArray<FVector> Locations);
 
 private:
 	
@@ -48,8 +48,7 @@ private:
 	TArray<AActor*> BarrierActors;
 	TArray<ABarrier*> Barriers;
 	
-	
-	FVector ZebraMeanLocation;
+	TArray<FVector> ZebraMeanLocations;
 	int AliveZebraCount;
 
 	TArray<AZebra*> GetAllZebras();
