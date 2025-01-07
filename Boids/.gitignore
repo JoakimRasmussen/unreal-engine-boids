@@ -10,4 +10,4 @@
 .vsconfig
 Boids.sln
 
-*.umap
+#*.umap
