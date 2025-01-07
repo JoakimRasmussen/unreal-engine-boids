@@ -161,9 +161,6 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra)
 			AverageVelocity += this->GetActorLocation() - OtherZebra->GetActorLocation();
 		}
 	}
-
-	
-	
 }
 
 void AZebra::CalculateZebraDirection()
@@ -172,6 +169,7 @@ void AZebra::CalculateZebraDirection()
 		+ (SpeedDifference * this->GetAlignmentWeight()) 
 		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight() 
 		+ AverageVelocity * this->GetAvoidanceWeight());
+	UE_LOG(LogTemp, Warning, TEXT("Direction: %s"), *Direction.ToString());
 }
 
 bool AZebra::IsFarFromHome()

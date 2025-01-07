@@ -85,20 +85,17 @@ void ABoidGameMode::ZebraFlocking()
 		float ClosestDistanceToBarrier = INFINITY;
 		ABarrier* ClosestBarrier = nullptr;
 		
-		// TESTING, SHOULD BE (0, 0,0)
 		ClosestFoodSourcePosition;
 		DistanceToClosestFoodSource = INFINITY;
 		
 		Zebra->AveragePosition = Zebra->GetActorLocation();
-		//Zebra->SpeedDifference = FVector(0, 0, 0);
-		//Zebra->AverageVelocity = FVector(0, 0, 0);
 		
 		// Regular flocking
 		if (Zebra->GetAnimalState() == EAnimalState::EAS_Flocking)
 		{
 			Count = 0;
 			
-			// 6-th sense to avoid Lions. (Scent perhaps)
+			// 6-th sense to avoid Lions. (Scent)
 			for (ALion* Lion : Lions)
 			{
 				Zebra->AvoidPredator(Lion);
@@ -154,16 +151,19 @@ void ABoidGameMode::ZebraFlocking()
 			}
 			
 			Zebra->CalculateZebraDirection();
+
+			float DistanceToAverage = FVector::Dist(Zebra->GetActorLocation(), Zebra->AveragePosition);
+			float SpeedFactor = FMath::Clamp(DistanceToAverage / 1000.0f, 0.0f, 1.0f);
 			
 			if (Zebra->GetHunger() < 10.0f)
 			{
-				// Need to find a smart way to adjust SpeedFactor...
 				Zebra->MoveInDirection((ClosestFoodSourcePosition - Zebra->GetActorLocation()).GetSafeNormal(), 0.5f);
 				Zebra->FoodWithinReach(ClosestFoodSourcePosition);
 			}
 			else
 			{
-				Zebra->MoveInDirection(Zebra->Direction.GetSafeNormal(), 0.5f);
+				// Need to find a smart way to adjust SpeedFactor...
+				Zebra->MoveInDirection(Zebra->Direction.GetSafeNormal(), SpeedFactor);
 			}
 		}
 	}
