@@ -27,6 +27,7 @@ public:
 	// Lifecycle functions
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	void SetDebugMode(bool bDebugMode);
 
 	// State transition functions
 	void StartHunting();
@@ -61,6 +62,7 @@ public:
 
 	// Setter for nearest zebra
 	void SetNearestZebra(AZebra* Zebra) { NearestZebra = Zebra; }
+	void SetClosestZebraFlock(FVector FlockLocation) { ClosestZebraFlock = FlockLocation; }
 
 protected:
 	// Components
@@ -75,36 +77,26 @@ protected:
 	// AI-related combat variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Combat", meta = (ToolTip = "The cooldown time (in seconds) between attacks"))
 	float AttackCooldown = 2.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Vision", meta = (ToolTip = "The lion's default sight radius for detecting zebras"))
 	float DefaultSightRadius = 1500.0f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Vision", meta = (ToolTip = "The lion's extended sight radius when desperate for food"))
 	float DesperateSightRadius = 2000.0f;
-
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Stamina", meta = (ClampMin = "0.0", ClampMax = "1.0", ToolTip = "Stamina threshold for initiating a hunt"))
 	float StaminaHuntThreshold = 0.40f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Stamina", meta = (ToolTip = "Stamina drain rate when the lion is desperate"))
 	float DesperateStaminaDrainRate = 1.5f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Stamina", meta = (ToolTip = "Stamina drain multiplier when wandering"))
 	float WanderingStaminaDrainMultiplier = 0.5f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Stamina", meta = (ToolTip = "Stamina drain multiplier when sprinting"))
 	float SprintingStaminaDrainMultiplier = 2.0f;
-
-	float DefaultStaminaDrainRate;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger", meta = (ClampMin = "0.0", ClampMax = "1.0", ToolTip = "The percentage of MaxHunger below which the lion becomes desperate for food (e.g., 0.20 means desperation starts when hunger is below 20%)."))
 	float DesperateHungerThreshold = 0.20f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger", meta = (ToolTip = "Hunger drain multiplier while resting"))
 	float RestingHungerDrainMultiplier = 0.25f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Hunger", meta = (ToolTip = "Hunger drain multiplier while hunting"))
 	float HuntingHungerDrainMultiplier = 2.0f;
+
+	float DefaultStaminaDrainRate;
 
 
 
@@ -112,7 +104,10 @@ protected:
 	FTimerHandle AttackEndTimer;
 
 	// Nearest zebra reference
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Combat")
 	AZebra* NearestZebra;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI | Combat")
+	FVector ClosestZebraFlock;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> DebugWidgetClass;

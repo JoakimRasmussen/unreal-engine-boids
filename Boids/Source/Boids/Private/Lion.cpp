@@ -30,7 +30,6 @@ ALion::ALion()
 
     DefaultStaminaDrainRate = StaminaDrainRate;
     DefaultSightRadius = SightRadius;
-	bDebugMode = true;
 }
 
 // Lifecycle Functions
@@ -39,20 +38,13 @@ void ALion::BeginPlay()
     Super::BeginPlay();
 
     Stamina = MaxStamina; // Initialize stamina
-    Hunger = MaxHunger; // Initialize hunger
+    Hunger = MaxHunger;   // Initialize hunger
     StaminaDrainRate = DefaultStaminaDrainRate; // Initialize stamina drain rate
-    SightRadius = DefaultSightRadius; // Initialize sight radius
+    SightRadius = DefaultSightRadius;           // Initialize sight radius
 
-    // Check if the widget class is assigned in the editor
-    if (DebugWidgetClass)
-    {
-        DebugWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), DebugWidgetClass);
-        if (DebugWidgetInstance)
-        {
-            DebugWidgetInstance->AddToViewport(); // Add the widget to the screen
-        }
-    }
+    SetDebugMode(bDebugMode); // Ensure debug mode is handled at the start
 }
+
 
 void ALion::Tick(float DeltaTime)
 {
@@ -71,14 +63,12 @@ void ALion::Tick(float DeltaTime)
 
     if (bDebugMode)
     {
-        // Draw a debug sphere representing the lion's sight radius
+        UpdateDebugWidget();
+
+        // Draw debug spheres
         DrawDebugSphere(GetWorld(), GetActorLocation(), SightRadius, 24, FColor::Red, false, -1.0f, 0, 2.0f);
-
-		// Draw a debug sphere representing the lion's attack radius
         FVector SphereLocation = AttackSphere->GetComponentLocation();
-		DrawDebugSphere(GetWorld(), SphereLocation, AttackSphere->GetUnscaledSphereRadius(), 24, FColor::Green, false, -1.0f, 0, 2.0f);
-
-        // Draw a debug sphere for the CurrentWanderPoint
+        DrawDebugSphere(GetWorld(), SphereLocation, AttackSphere->GetUnscaledSphereRadius(), 24, FColor::Green, false, -1.0f, 0, 2.0f);
         DrawDebugSphere(GetWorld(), CurrentWanderPoint, 10.0f, 12, FColor::Blue, false, -1.0f, 0, 2.0f);
     }
 
@@ -115,6 +105,34 @@ void ALion::Tick(float DeltaTime)
     }
 }
 
+void ALion::SetDebugMode(bool bNewDebugMode)
+{
+    bDebugMode = bNewDebugMode;
+
+    if (bDebugMode)
+    {
+        // Create and add the widget to the viewport if it doesn't already exist
+        if (!DebugWidgetInstance && DebugWidgetClass)
+        {
+            DebugWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), DebugWidgetClass);
+            if (DebugWidgetInstance)
+            {
+                DebugWidgetInstance->AddToViewport();
+            }
+        }
+    }
+    else
+    {
+        // Remove the widget from the viewport and destroy the instance
+        if (DebugWidgetInstance)
+        {
+            DebugWidgetInstance->RemoveFromViewport();
+            DebugWidgetInstance = nullptr; // Clear the reference
+        }
+    }
+}
+
+
 // State Transition Functions
 void ALion::StartHunting()
 {
@@ -124,7 +142,7 @@ void ALion::StartHunting()
 void ALion::EndAttack()
 {
     GetCharacterMovement()->StopMovementImmediately();
-    AnimalState = EAnimalState::EAS_Wandering;
+	AnimalState = EAnimalState::EAS_Resting; // Lay down next to the zebra after kill
     NearestZebra = nullptr;
     bIsAttacking = false;
 }
@@ -174,7 +192,7 @@ void ALion::HandleWanderingState(float DeltaTime)
     MoveTowardsLocation(CurrentWanderPoint, CalculateSpeedFromStamina());
 
     // Transition to hunting if conditions are met
-    if (ZebraInSight() && (EnoughStamina() && IsHungry()) || IsDesperate())
+    if ((EnoughStamina() && IsHungry()) || IsDesperate())
     {
         StartHunting();
     }
@@ -186,7 +204,7 @@ void ALion::HandleHuntingState(float DeltaTime)
     DrainStamina(DeltaTime);
 
     // Check if the lion should stop hunting (unless it is desperate)
-    if (!IsDesperate() && (!ZebraInSight() || !EnoughStamina() || !IsHungry()))
+    if (!IsDesperate() && (!EnoughStamina() || !IsHungry()))
     {
         StartWandering();
         return;
@@ -208,7 +226,15 @@ void ALion::HandleHuntingState(float DeltaTime)
     // Move directly towards the zebra if the path is clear
     else
     {
-        MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+        if (ZebraInSight())
+        {
+            MoveTowardsOtherAnimal(NearestZebra, CalculateSpeedFromStamina());
+        }
+        else
+        {
+			MoveTowardsLocation(ClosestZebraFlock, CalculateSpeedFromStamina());
+        }
+
     }
 }
 

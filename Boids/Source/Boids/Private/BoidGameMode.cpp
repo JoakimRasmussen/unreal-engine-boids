@@ -66,8 +66,6 @@ TArray<AFoodSource*> ABoidGameMode::GetAllFoodSources()
 
 void ABoidGameMode::ZebraFlocking()
 {
-	UpdateZebraMeanLocation();
-
 	FVector ClosestFoodSourcePosition;
 	FVector Direction;
 	
@@ -87,6 +85,7 @@ void ABoidGameMode::ZebraFlocking()
 		
 		ClosestFoodSourcePosition;
 		DistanceToClosestFoodSource = INFINITY;
+		ZebraMeanLocations.Empty();
 		
 		Zebra->AveragePosition = Zebra->GetActorLocation();
 		
@@ -127,6 +126,21 @@ void ABoidGameMode::ZebraFlocking()
 			Zebra->AveragePosition /= Count;
 			Zebra->AverageVelocity /= Count;
 
+			bool bIsDuplicate = false;
+			float Tolerance = 100.0f;
+			for (const FVector& Location : ZebraMeanLocations)
+			{
+				if (FVector::Dist(Location, Zebra->AveragePosition) < Tolerance)
+				{
+					bIsDuplicate = true;
+					break;
+				}
+			}
+
+			if (!bIsDuplicate)
+			{
+				ZebraMeanLocations.Add(Zebra->AveragePosition);
+			}
 
 			if (Zebra->SpeedDifference == FVector(0, 0, 0) && Zebra->AverageVelocity == FVector(0, 0, 0))
 			{
@@ -169,34 +183,6 @@ void ABoidGameMode::ZebraFlocking()
 	}
 }
 
-void ABoidGameMode::UpdateZebraMeanLocation()
-{
-	FVector LastZebraMeanLocation = ZebraMeanLocation;
-	ZebraMeanLocation = FVector(0.0f, 0.0f, 0.0f);
-	int LastCount = AliveZebraCount;
-	AliveZebraCount = 0;
-
-	for (AZebra* Zebra : Zebras)
-	{
-		if (Zebra->GetAnimalState() == EAnimalState::EAS_Dead) continue;
-
-		ZebraMeanLocation += Zebra->GetActorLocation();
-		AliveZebraCount++;
-	}
-
-	ZebraMeanLocation /= AliveZebraCount;
-
-	// Print if the mean location has changed
-	if (LastZebraMeanLocation != ZebraMeanLocation)
-	{
-		// UE_LOG(LogTemp, Warning, TEXT("Zebra Mean Location: %s"), *ZebraMeanLocation.ToString());
-	}
-	if (LastCount != AliveZebraCount)
-	{
-		// UE_LOG(LogTemp, Warning, TEXT("Alive Zebra Count: %d"), AliveZebraCount);
-	}
-}
-
 // Function to update each lion's nearest zebra
 void ABoidGameMode::UpdateLionTargets()
 {
@@ -206,8 +192,29 @@ void ABoidGameMode::UpdateLionTargets()
 		{
 			AZebra* NearestZebra = FindNearestZebra(Lion);
 			Lion->SetNearestZebra(NearestZebra);  // Update the lion's nearest zebra
+
+			FVector ClosestZebraFlock = GetClosestLocation(Lion->GetActorLocation(), ZebraMeanLocations);
+			Lion->SetClosestZebraFlock(ClosestZebraFlock);
 		}
 	}
+}
+
+FVector ABoidGameMode::GetClosestLocation(FVector CurrentLocation, TArray<FVector> Locations)
+{
+	FVector ClosestLocation = CurrentLocation; // Default to current location
+	float ClosestDistance = MAX_FLT;
+
+	for (FVector Location : Locations)
+	{
+		float Distance = FVector::Dist(CurrentLocation, Location);
+		if (Distance < ClosestDistance)
+		{
+			ClosestDistance = Distance;
+			ClosestLocation = Location;
+		}
+	}
+	return ClosestLocation;
+
 }
 
 TArray<ALion*> ABoidGameMode::GetAllLions()
