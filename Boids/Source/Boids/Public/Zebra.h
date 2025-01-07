@@ -9,7 +9,7 @@
 
 class UCharacterMovementComponent;
 /**
- * 
+ *
  */
 UCLASS()
 class BOIDS_API AZebra : public AAnimal
@@ -17,7 +17,7 @@ class BOIDS_API AZebra : public AAnimal
 	GENERATED_BODY()
 
 public:
-	
+
 	AZebra();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -33,7 +33,7 @@ public:
 	UCharacterMovementComponent* CharacterMovement;
 	FVector MoveDirection = FVector(1, 0, 0);
 	FVector FleeDirection = FVector(0, 0, 0);
-	
+
 	void SetVelocity(FVector Velocity);
 	void SetFleeDirection(FVector CurrentPosition, FVector PredatorPosition);
 	void SetMoveDirection(FVector MoveDirection);
@@ -65,7 +65,7 @@ private:
 	float AlignmentWeight = 0.001f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float BarrierWeight = 10.0f;
-	
+
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
 	float AvoidanceRadius = 10.0f;
 	UPROPERTY(EditAnywhere, Category = "Zebra - Flocking")
@@ -82,7 +82,7 @@ private:
 	FVector HomePosition;
 
 public:
-	
+
 	FORCEINLINE float GetCohesionWeight() const { return CohesionWeight; }
 	FORCEINLINE float GetAvoidanceWeight() const { return AvoidanceWeight; }
 	FORCEINLINE float GetAlignmentWeight() const { return AlignmentWeight; }
@@ -93,13 +93,13 @@ public:
 	FORCEINLINE float GetPredatorFleeDistance() const { return PredatorFleeDistance; }
 	FORCEINLINE float GetFlockingRadius() const { return FlockingRadius; }
 	FORCEINLINE float DistanceToActor(AActor* Actor) const { return FVector::Dist(GetActorLocation(), Actor->GetActorLocation()); }
-	FORCEINLINE float GetFoodSourceAttraction() const { return MaxHunger/Hunger; }
+	FORCEINLINE float GetFoodSourceAttraction() const { return MaxHunger / Hunger; }
 	FORCEINLINE float GetHunger() const { return Hunger; }
-	
+
 	FORCEINLINE FVector GetHomePosition() const { return HomePosition; }
 	FORCEINLINE FVector GetFleeDirection() const { return FleeDirection; }
 
 	FORCEINLINE bool IsDead() const { return GetAnimalState() == EAnimalState::EAS_Dead; }
 	FORCEINLINE bool IsFleeing() const { return GetAnimalState() == EAnimalState::EAS_Fleeing; }
-	
+
 };

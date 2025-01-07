@@ -18,7 +18,7 @@ void AZebra::BeginPlay()
 	AvoidanceWeight += FMath::RandRange(-0.05f, 0.05f);
 	AlignmentWeight += FMath::RandRange(-0.05f, 0.05f);
 	Hunger += FMath::RandRange(-10.0f, 10.0f);
-	
+
 	HomePosition = GetActorLocation();
 }
 
@@ -31,7 +31,7 @@ void AZebra::Tick(float DeltaTime)
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetFlockingRadius(), 12, FColor::Green, false, -1, 0, 1);
 		DrawDebugSphere(GetWorld(), GetActorLocation(), GetPredatorFleeDistance(), 12, FColor::Red, false, -1, 0, 1);
 	}
-	
+
 	OutOfStamina();
 	Eating(DeltaTime);
 	DrainHunger(DeltaTime);
@@ -151,7 +151,7 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra)
 	{
 		return;
 	}
-	
+
 	if (this != OtherZebra)
 	{
 		SpeedDifference += OtherZebra->GetVelocity() - this->GetVelocity();
@@ -162,15 +162,15 @@ void AZebra::FlockingCalculations(AZebra* OtherZebra)
 		}
 	}
 
-	
-	
+
+
 }
 
 void AZebra::CalculateZebraDirection()
 {
 	Direction = (this->GetVelocity()
-		+ (SpeedDifference * this->GetAlignmentWeight()) 
-		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight() 
+		+ (SpeedDifference * this->GetAlignmentWeight())
+		+ (AveragePosition - this->GetActorLocation()) * this->GetCohesionWeight()
 		+ AverageVelocity * this->GetAvoidanceWeight());
 }
 
